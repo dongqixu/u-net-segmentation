@@ -318,35 +318,36 @@ class Unet3D(object):
                                self.input_ground_truth: train_label_batch})
                 '''Summary'''
                 # TODO: test do not run each time
-                val_loss = self.total_loss.eval({self.input_image: val_data_batch,
-                                                 self.input_ground_truth: val_label_batch})
-                val_prediction = self.sess.run(self.predicted_label,
-                                               feed_dict={self.input_image: val_data_batch})
+                # val_loss = self.total_loss.eval({self.input_image: val_data_batch,
+                #                                  self.input_ground_truth: val_label_batch})
+                # val_prediction = self.sess.run(self.predicted_label,
+                #                                feed_dict={self.input_image: val_data_batch})
 
                 loss_log.write('[label] ')
                 loss_log.write(str(np.unique(train_label_batch)))
                 loss_log.write(str(np.unique(val_label_batch)))
-                loss_log.write(str(np.unique(val_prediction)))
+                # loss_log.write(str(np.unique(val_prediction)))
                 loss_log.write('\n')
 
                 # TODO: Dice? Problem?
-                dice = []
-                for i in range(self.output_channels):
-                    intersection = np.sum(
-                        ((val_label_batch[:, :, :, :] == i) * 1) * ((val_prediction[:, :, :, :] == i) * 1)
-                    )
-                    union = np.sum(
-                        ((val_label_batch[:, :, :, :] == i) * 1) + ((val_prediction[:, :, :, :] == i) * 1)
-                    ) + 1e-5
-                    '''Why not necessary to square'''
-                    dice.append(2.0 * intersection / union)
-                loss_log.write('[Dice] %s \n' % dice)
+                # dice = []
+                # for i in range(self.output_channels):
+                #     intersection = np.sum(
+                #         ((val_label_batch[:, :, :, :] == i) * 1) * ((val_prediction[:, :, :, :] == i) * 1)
+                #     )
+                #     union = np.sum(
+                #         ((val_label_batch[:, :, :, :] == i) * 1) + ((val_prediction[:, :, :, :] == i) * 1)
+                #     ) + 1e-5
+                #     '''Why not necessary to square'''
+                #     dice.append(2.0 * intersection / union)
+                # loss_log.write('[Dice] %s \n' % dice)
 
                 # loss_log.write('%s %s\n' % (train_loss, val_loss))
-                output_format = '[Epoch] %d, time: %4.4f, train_loss: %.8f, val_loss: %.8f \n' \
+                # deprecated: remove validation loss, dice loss original
+                output_format = '[Epoch] %d, time: %4.4f, train_loss: %.8f \n' \
                                 '[Loss] dice_loss: %.8f, weight_loss: %.8f \n\n'\
-                                % (epoch, time.time() - start_time, train_loss, val_loss,
-                                   dice_loss * self.dice_loss_coefficient, weight_loss)
+                                % (epoch, time.time() - start_time, train_loss,
+                                   dice_loss, weight_loss)
                 loss_log.write(output_format)
                 print(output_format, end='')
                 if np.mod(epoch+1, self.save_interval) == 0:
