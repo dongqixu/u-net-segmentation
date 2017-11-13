@@ -3,6 +3,8 @@ import tensorflow.contrib.slim as slim
 
 ''' Fundamental 3D Convolution Definition '''
 
+# TODO: Dilated Convolution
+
 
 # 3D convolution
 def conv3d(inputs, output_channels, kernel_size, stride, padding='same', use_bias=False, name='conv'):

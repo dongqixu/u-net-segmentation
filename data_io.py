@@ -5,21 +5,21 @@ from skimage.transform import resize
 
 ''' Data loading and IO '''
 
-''' Code To Be Checked! '''
 
-
+# TODO: discard the resize
 # load all data into memory
 def load_image_and_label(image_filelist, label_filelist, resize_coefficient):
     image_data_list = []
     label_data_list = []
-    for i in range(len(label_filelist)):
+    for ith_file in range(len(label_filelist)):
         # image
-        image_data = nib.load(image_filelist[i]).get_data()
+        image_data = nib.load(image_filelist[ith_file]).get_data()
         image_data = copy.copy(image_data)
         # label
-        label_data = nib.load(label_filelist[i]).get_data()
+        label_data = nib.load(label_filelist[ith_file]).get_data()
         label_data = copy.copy(label_data)
 
+        # TODO: other data argumentation
         '''Resize or other method'''
         # skimage.transform.resize: Resize image to match a certain size.
         resize_dimension = (np.array(image_data.shape) * resize_coefficient).astype(dtype='int')
@@ -48,14 +48,15 @@ def get_image_and_label_batch(image_data_list, label_data_list, input_size, batc
     label_batch = np.zeros([batch_size, input_size, input_size, input_size]).astype('int32')
 
     '''Cannot make sure all data go through the network'''
-    for i in range(batch_size):
+    # random reading data batch
+    for ith_batch in range(batch_size):
         # randomly select image file
         random_range = np.arange(len(image_data_list))
         np.random.shuffle(random_range)
         random_image = image_data_list[random_range[0]].astype('float32')
         random_label = label_data_list[random_range[0]].astype('int32')
 
-        # randomly select cube
+        # randomly select cube -> boundary considered
         depth, height, width = random_image.shape
         depth_random = np.arange(depth - input_size)
         np.random.shuffle(depth_random)
@@ -82,12 +83,11 @@ def get_image_and_label_batch(image_data_list, label_data_list, input_size, batc
         )
 
         '''Necessary? Zero problem may happen'''
-        # normalization
-        # TODO: check this property
-        image_temp = image_temp / 255.0
+        # TODO: normalization over the whole dataset
+        image_temp = image_temp / 255.0  # what is the range?
         mean_temp = np.mean(image_temp)
         deviation_temp = np.std(image_temp)
-        image_normalization = (image_temp - mean_temp) / (deviation_temp + 1e-5)
+        image_normalization = (image_temp - mean_temp) / (deviation_temp + 1e-5)  # check value of array
 
         # data augmentation with rotation
         # TODO: data augmentation
@@ -96,8 +96,8 @@ def get_image_and_label_batch(image_data_list, label_data_list, input_size, batc
             '''Further improvement on rotation'''
 
         # NDHWC
-        image_batch[i, :, :, :, channel-1] = image_normalization
-        label_batch[i, :, :, :] = label_temp
+        image_batch[ith_batch, :, :, :, channel-1] = image_normalization
+        label_batch[ith_batch, :, :, :] = label_temp
 
     return image_batch, label_batch
 
@@ -110,7 +110,7 @@ if __name__ == '__main__':
     print(image_list)
     print(label_list)
     # load test
-    image_data_list, label_data_list = load_image_and_label(image_list, label_list, 1)
+    image_data_list, label_data_list = load_image_and_label(image_list, label_list, resize_coefficient=1)
     print('images loaded...')
 
     # print shape

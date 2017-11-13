@@ -2,7 +2,7 @@ import argparse
 import datetime
 import os
 import tensorflow as tf
-from json_io import *
+from json_io import dict_to_json
 from model import Unet3D
 
 ''' Main Function '''

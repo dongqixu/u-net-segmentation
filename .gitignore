@@ -107,5 +107,6 @@ json/
 logs/
 loss/
 test/
+checkpoint/
 .idea/
 .DS_Store

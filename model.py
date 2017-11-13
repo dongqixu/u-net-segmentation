@@ -1,11 +1,12 @@
 import os
-import time
-from conv_def import *
-from data_io import *
-from glob import glob
-from json_io import *
-from loss_def import *
 import numpy as np
+import tensorflow as tf
+import time
+from conv_def import conv_bn_relu, deconv_bn_relu, conv3d, deconv3d
+from data_io import load_image_and_label, get_image_and_label_batch
+from glob import glob
+from json_io import dict_to_json
+from loss_def import dice_loss_function, softmax_loss_function
 
 ''' 3D U-Net Model '''
 
@@ -78,6 +79,7 @@ class Unet3D(object):
 
         # down-sampling path
         # device: gpu0
+        # TODO: make the feature number variant
         with tf.device(device_name_or_function=self.device[0]):
             # first level
             encoder1_1 = conv_bn_relu(inputs=inputs, output_channels=32, kernel_size=3, stride=1,
@@ -207,7 +209,7 @@ class Unet3D(object):
             self.auxiliary2_weight_loss * 0.6 + \
             self.auxiliary3_weight_loss * 0.3
 
-        # TODO: adjust the weights
+        # TODO: remove the dice loss?
         self.total_loss = self.total_dice_loss * self.loss_coefficient + self.total_weight_loss
 
         # trainable variables
@@ -250,8 +252,7 @@ class Unet3D(object):
         self.saver.save(self.sess, os.path.join(checkpoint_dir, model_name), global_step=global_step)
         # defaults to the list of all saveable objects
 
-    '''To be checked!'''
-
+    # TODO: load check point -> To be checked!
     def load_checkpoint(self, checkpoint_dir):
         model_dir = '%s_%s' % (self.batch_size, self.output_size)
         checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
@@ -314,7 +315,7 @@ class Unet3D(object):
                     feed_dict={self.input_image: train_data_batch,
                                self.input_ground_truth: train_label_batch})
                 '''Summary'''
-                # may not run each time
+                # TODO: test do not run each time
                 val_loss = self.total_loss.eval({self.input_image: val_data_batch,
                                                  self.input_ground_truth: val_label_batch})
                 val_prediction = self.sess.run(self.predicted_label,
@@ -326,7 +327,7 @@ class Unet3D(object):
                 loss_log.write(str(np.unique(val_prediction)))
                 loss_log.write('\n')
 
-                # Dice
+                # TODO: Dice? Problem?
                 dice = []
                 for i in range(self.output_channels):
                     intersection = np.sum(
@@ -350,7 +351,7 @@ class Unet3D(object):
                     self.save_checkpoint(self.checkpoint_dir, self.model_name, global_step=epoch+1)
                     print('Model saved with epoch %d' % (epoch+1))
 
-    '''Not Yet Finished'''
+    # TODO: Not Yet Finished!
     def test(self):
         # initialization
         variables_initialization = tf.global_variables_initializer()
@@ -391,6 +392,7 @@ class Unet3D(object):
                 prediction_full_batch = np.zeros([1, ith_depth, ith_height, ith_width, self.batch_size])
                 voted_prediction_label = np.zeros([1, ith_depth, ith_height, ith_width])
 
+                # TODO: critical!
                 '''
                 for i, j, k, loop?
                 load batch each

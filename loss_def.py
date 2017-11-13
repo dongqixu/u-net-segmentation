@@ -3,9 +3,7 @@ import tensorflow as tf
 ''' Loss Function Definition'''
 
 
-'''Dice Loss, depth 3, Check'''
-
-
+# TODO: problem with the dice loss?
 def dice_loss_function(prediction, ground_truth):
     ground_truth = tf.one_hot(indices=ground_truth, depth=3)
     dice = 0
@@ -19,9 +17,7 @@ def dice_loss_function(prediction, ground_truth):
     return -dice
 
 
-'''SoftMax Loss, Check'''
-
-
+# TODO: SoftMax Loss to be checked
 def softmax_loss_function(logits, labels):
     # loss = weighted * - target * log(softmax(logits))
     # weighted?
