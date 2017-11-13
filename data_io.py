@@ -1,6 +1,7 @@
 import copy
 import nibabel as nib
 import numpy as np
+import sys
 from skimage.transform import resize
 
 ''' Data loading and IO '''
@@ -14,6 +15,11 @@ def load_image_and_label(image_filelist, label_filelist, resize_coefficient=1):
         # image
         image_data = nib.load(image_filelist[ith_file]).get_data()
         image_data = copy.copy(image_data)
+        # TODO: Normalization works?
+        mean_num = np.mean(image_data)
+        deviation_num = np.std(image_data)
+        image_data = (image_data - mean_num) / (deviation_num + 1e-5)
+
         # label
         label_data = nib.load(label_filelist[ith_file]).get_data()
         label_data = copy.copy(label_data)
@@ -88,12 +94,15 @@ def get_image_and_label_batch(image_data_list, label_data_list, input_size, batc
         )
 
         '''Necessary? Zero problem may happen'''
-        # TODO: normalization over the whole dataset?
+        # Already perform normalization over the whole dataset
+        image_normalization = image_temp
+        '''
         image_temp = image_temp / 255.0  # what is the range?
         mean_temp = np.mean(image_temp)
         deviation_temp = np.std(image_temp)
         # print(mean_temp, deviation_temp)  # the form of single value
         image_normalization = (image_temp - mean_temp) / (deviation_temp + 1e-5)
+        '''
 
         # data augmentation with rotation
         # TODO: data augmentation
@@ -111,7 +120,57 @@ def get_image_and_label_batch(image_data_list, label_data_list, input_size, batc
     return image_batch, label_batch
 
 
+def slice_visualization(image_data, label_data, batch=False, show_depth=None, show_height=None, show_width=None):
+    # batch reshape
+    if batch:
+        batch_size, depth, height, width, channel = image_data.shape
+        image_data = np.reshape(image_data, [depth, height, width])
+        batch_size, depth, height, width = label_data.shape
+        label_data = np.reshape(label_data, [depth, height, width])
+    # check shape
+    if image_data.shape != label_data.shape:
+        print('Dimension mismatch!')
+        return
+    print(f'Data Dimension: {image_data.shape}')
+    depth, height, width = image_data.shape
+    if show_depth is None:
+        show_depth = np.random.randint(depth)
+    if show_height is None:
+        show_height = np.random.randint(height)
+    if show_width is None:
+        show_width = np.random.randint(width)
+
+    data_slice = []
+    label_slice = []
+    # data
+    data_slice.append(image_data[show_depth, :, :])
+    data_slice.append(image_data[:, show_height, :])
+    data_slice.append(image_data[:, :, show_width])
+    # label
+    label_slice.append(label_data[show_depth, :, :])
+    label_slice.append(label_data[:, show_height, :])
+    label_slice.append(label_data[:, :, show_width])
+
+    plt.figure()
+    for ith_slice in range(3):
+        # print(data_slice[ith_slice].shape)
+        # print(label_slice[ith_slice].shape)
+        plt.subplot(230+ith_slice+1)
+        plt.imshow(data_slice[ith_slice], cmap='gray', origin='lower')
+        plt.subplot(230+ith_slice+4)
+        plt.imshow(label_slice[ith_slice], cmap='gray', origin='lower')
+    # plt.subplot_tool()
+    plt.show()
+    # plt.imshow(z_slice, cmap='gray', origin='lower')
+    # plt.text(0.5, 0.5, i, fontsize=12)
+    # plt.pause(0.01)
+
+
 if __name__ == '__main__':
+    # pyplot module
+    if 'matplotlib.pyplot' not in sys.modules:
+        import matplotlib.pyplot as plt
+
     # Not heavy load of main memory
     from glob import glob
     image_list = glob(pathname='{}/*.nii.gz'.format('../hvsmr/data'))
@@ -124,19 +183,19 @@ if __name__ == '__main__':
     image_data_list, label_data_list = load_image_and_label(image_list, label_list, resize_coefficient=1)
     print('images loaded...')
 
-    # print shape
-    for i in range(len(image_data_list)):
-        print(f'Batch {i}')
-        print(np.amin(image_data_list[i]), np.amax(image_data_list[i]))
-        print(np.amin(label_data_list[i]), np.amax(label_data_list[i]))
-        print('-----------------------')
+    # print data range
+    # for i in range(len(image_data_list)):
+    #     print(f'Batch {i}:', end='')
+    #     print(np.amin(image_data_list[i]), np.amax(image_data_list[i]), end='')
+    #     print(np.amin(label_data_list[i]), np.amax(label_data_list[i]))
 
     # Testing batch
-    for i in range(1000):
+    for i in range(1):
         image_batch, label_batch = get_image_and_label_batch(image_data_list, label_data_list, input_size=96,
                                                              batch_size=1, channel=1)
-        # print('data')
+        # print('data: ', end='')
         # print(image_batch.shape)
-        # print('label')
+        # print('label ', end='')
         # print(label_batch.shape)
-    # TODO: visualization
+        slice_visualization(image_batch, label_batch, batch=True)
+    slice_visualization(image_data_list[0], label_data_list[0])
