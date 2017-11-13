@@ -288,6 +288,8 @@ class Unet3D(object):
         # load all volume files
         image_list = glob(pathname='{}/*.nii.gz'.format(self.train_data_dir))
         label_list = glob(pathname='{}/*.nii.gz'.format(self.label_data_dir))
+        image_list.sort()
+        label_list.sort()
         image_data_list, label_data_list = load_image_and_label(image_list, label_list, self.resize_coefficient)
         print('Data loaded successfully.')
 
@@ -373,6 +375,8 @@ class Unet3D(object):
         # load all volume files
         image_list = glob(pathname='{}/*.nii.gz'.format(self.train_data_dir))
         label_list = glob(pathname='{}/*.nii.gz'.format(self.label_data_dir))
+        image_list.sort()
+        label_list.sort()
         image_data_list, label_data_list = load_image_and_label(image_list, label_list, self.resize_coefficient)
         print('Data loaded successfully.')
 

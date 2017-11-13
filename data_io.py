@@ -6,9 +6,8 @@ from skimage.transform import resize
 ''' Data loading and IO '''
 
 
-# TODO: discard the resize
 # load all data into memory
-def load_image_and_label(image_filelist, label_filelist, resize_coefficient):
+def load_image_and_label(image_filelist, label_filelist, resize_coefficient=1):
     image_data_list = []
     label_data_list = []
     for ith_file in range(len(label_filelist)):
@@ -18,23 +17,29 @@ def load_image_and_label(image_filelist, label_filelist, resize_coefficient):
         # label
         label_data = nib.load(label_filelist[ith_file]).get_data()
         label_data = copy.copy(label_data)
+        # check
+        if image_data.shape != label_data.shape:
+            print('Error with shape mismatch!')
+            exit(1)
 
         # TODO: other data argumentation
         '''Resize or other method'''
-        # skimage.transform.resize: Resize image to match a certain size.
-        resize_dimension = (np.array(image_data.shape) * resize_coefficient).astype(dtype='int')
-        image_data = resize(image=image_data, output_shape=resize_dimension, order=1,
-                            preserve_range=True, mode='constant')
-        label_data = resize(image=label_data, output_shape=resize_dimension, order=0,
-                            preserve_range=True, mode='constant')
-        # The order of interpolation. The order has to be in the range 0-5:
-        # 0: Nearest-neighbor
-        # 1: Bi-linear (default)
-        # 2: Bi-quadratic
-        # 3: Bi-cubic
-        # 4: Bi-quartic
-        # 5: Bi-quintic
-        # preserve_range: keep the original range of values
+        if resize_coefficient != 1:
+            # skimage.transform.resize: Resize image to match a certain size.
+            print('Perform images resizing...')
+            resize_dimension = (np.array(image_data.shape) * resize_coefficient).astype(dtype='int')
+            image_data = resize(image=image_data, output_shape=resize_dimension, order=1,
+                                preserve_range=True, mode='constant')
+            label_data = resize(image=label_data, output_shape=resize_dimension, order=0,
+                                preserve_range=True, mode='constant')
+            # The order of interpolation. The order has to be in the range 0-5:
+            # 0: Nearest-neighbor
+            # 1: Bi-linear (default)
+            # 2: Bi-quadratic
+            # 3: Bi-cubic
+            # 4: Bi-quartic
+            # 5: Bi-quintic
+            # preserve_range: keep the original range of values
         image_data_list.append(image_data)
         label_data_list.append(label_data)
 
@@ -83,17 +88,21 @@ def get_image_and_label_batch(image_data_list, label_data_list, input_size, batc
         )
 
         '''Necessary? Zero problem may happen'''
-        # TODO: normalization over the whole dataset
+        # TODO: normalization over the whole dataset?
         image_temp = image_temp / 255.0  # what is the range?
         mean_temp = np.mean(image_temp)
         deviation_temp = np.std(image_temp)
-        image_normalization = (image_temp - mean_temp) / (deviation_temp + 1e-5)  # check value of array
+        # print(mean_temp, deviation_temp)  # the form of single value
+        image_normalization = (image_temp - mean_temp) / (deviation_temp + 1e-5)
 
         # data augmentation with rotation
         # TODO: data augmentation
         if rotation_flag and np.random.random() > 0.65:
             print('Rotation batch...')
             '''Further improvement on rotation'''
+        if flip_flag and np.random.random() > 0.65:
+            print('Flipping batch...')
+            '''Further improvement on flipping'''
 
         # NDHWC
         image_batch[ith_batch, :, :, :, channel-1] = image_normalization
@@ -107,6 +116,8 @@ if __name__ == '__main__':
     from glob import glob
     image_list = glob(pathname='{}/*.nii.gz'.format('../hvsmr/data'))
     label_list = glob(pathname='{}/*.nii.gz'.format('../hvsmr/label'))
+    image_list.sort()
+    label_list.sort()
     print(image_list)
     print(label_list)
     # load test
@@ -115,14 +126,17 @@ if __name__ == '__main__':
 
     # print shape
     for i in range(len(image_data_list)):
-        print(image_data_list[i].shape)
+        print(f'Batch {i}')
+        print(np.amin(image_data_list[i]), np.amax(image_data_list[i]))
+        print(np.amin(label_data_list[i]), np.amax(label_data_list[i]))
+        print('-----------------------')
 
     # Testing batch
-    for i in range(1):
+    for i in range(1000):
         image_batch, label_batch = get_image_and_label_batch(image_data_list, label_data_list, input_size=96,
                                                              batch_size=1, channel=1)
-        print('data')
-        print(image_batch.shape)
-        print('label')
-        print(label_batch.shape)
+        # print('data')
+        # print(image_batch.shape)
+        # print('label')
+        # print(label_batch.shape)
     # TODO: visualization
