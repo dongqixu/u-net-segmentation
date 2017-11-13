@@ -33,7 +33,7 @@ def load_image_and_label(image_filelist, label_filelist, resize_coefficient=1):
         if resize_coefficient != 1:
             # skimage.transform.resize: Resize image to match a certain size.
             print('Perform images resizing...')
-            resize_dimension = (np.array(image_data.shape) * resize_coefficient).astype(dtype='int')
+            resize_dimension = (np.array(image_data.shape) * resize_coefficient).astype(dtype='int32')
             image_data = resize(image=image_data, output_shape=resize_dimension, order=1,
                                 preserve_range=True, mode='constant')
             label_data = resize(image=label_data, output_shape=resize_dimension, order=0,
@@ -55,8 +55,8 @@ def load_image_and_label(image_filelist, label_filelist, resize_coefficient=1):
 # generate batch
 def get_image_and_label_batch(image_data_list, label_data_list, input_size, batch_size,
                               channel=1, flip_flag=False, rotation_flag=False):
-    image_batch = np.zeros([batch_size, input_size, input_size, input_size, channel]).astype('float32')
-    label_batch = np.zeros([batch_size, input_size, input_size, input_size]).astype('int32')
+    image_batch = np.zeros([batch_size, input_size, input_size, input_size, channel], dtype='float32')
+    label_batch = np.zeros([batch_size, input_size, input_size, input_size], dtype='int32')
 
     '''Cannot make sure all data go through the network'''
     # random reading data batch
@@ -184,7 +184,8 @@ if __name__ == '__main__':
     print('images loaded...')
 
     # print data range
-    # for i in range(len(image_data_list)):
+    for i in range(len(image_data_list)):
+        print(image_data_list[i].dtype, label_data_list[i].dtype)
     #     print(f'Batch {i}:', end='')
     #     print(np.amin(image_data_list[i]), np.amax(image_data_list[i]), end='')
     #     print(np.amin(label_data_list[i]), np.amax(label_data_list[i]))

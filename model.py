@@ -354,7 +354,7 @@ class Unet3D(object):
                     self.save_checkpoint(self.checkpoint_dir, self.model_name, global_step=epoch+1)
                     print('Model saved with epoch %d' % (epoch+1))
 
-    # TODO: Not Yet Finished!
+    # May produce memory issue - not test
     def test(self):
         # initialization
         variables_initialization = tf.global_variables_initializer()
@@ -389,19 +389,28 @@ class Unet3D(object):
             test_log.write(dict_to_json(self.parameter_dict))
             test_log.write('\n')
 
-            for ith_sample in range(len(image_list)):
+            for ith_sample in range(len(image_data_list)):
                 start_time = time.time()
+                test_batch_size = 1
+                test_image_data = image_data_list[ith_sample]
+                # output_channels -> number of class
+                # input_channels -> 1
+                ith_depth, ith_height, ith_width = test_image_data.shape
+                # final_prediction_label = np.zeros([ith_depth, ith_height, ith_width], dtype='int32')
+                test_prediction_full_with_count = np.zeros(
+                    [test_batch_size, ith_depth, ith_height, ith_width, self.output_channels], dtype='int32')
+                test_data_full = np.reshape(image_data_list[ith_sample].astype('float32'), [
+                    test_batch_size, ith_depth, ith_height, ith_width, self.input_channels])
+                test_label_full = np.reshape(label_data_list[ith_sample].astype('int32'), [
+                    test_batch_size, ith_depth, ith_height, ith_width])
 
-                ith_depth, ith_height, ith_width = image_data_list[ith_sample]
-                '''Math Calculation'''
-                prediction_full_batch = np.zeros([1, ith_depth, ith_height, ith_width, self.batch_size])
-                voted_prediction_label = np.zeros([1, ith_depth, ith_height, ith_width])
+                # boundary considered
+                depth_range = np.arange(ith_depth - self.input_size)
+                height_range = np.arange(ith_height - self.input_size)
+                width_range = np.arange(ith_width - self.input_size)
 
                 # TODO: critical!
                 '''
-                for i, j, k, loop?
-                load batch each
-                
                 update network
                 
                 get the label, loss still OK
@@ -409,57 +418,83 @@ class Unet3D(object):
                 calculate the dice -> and other standard
                 '''
 
-                for d in range(ith_depth):
-                    for h in range(ith_height):
-                        for w in range(ith_width):
-                            souce_data, souce_label = image_data_list[ith_sample], label_data_list[ith_sample]
-                            test_data_batch = np.zeros([self.batch_size, self.input_size,
-                                                        self.input_size, self.input_size, 1]).astype('float32')
-                            test_label_batch = np.zeros([self.batch_size, self.input_size,
-                                                         self.input_size, self.input_size]).astype('int32')
+                for d in depth_range:
+                    for h in height_range:
+                        for w in width_range:
+                            test_data_batch = test_data_full[
+                                               test_batch_size,
+                                               d:d + self.input_size,
+                                               h:h + self.input_size,
+                                               w:w + self.input_size,
+                                               self.input_channels
+                                               ]
+                            test_label_batch = test_label_full[
+                                               test_batch_size,
+                                               d:d + self.input_size,
+                                               h:h + self.input_size,
+                                               w:w + self.input_size
+                                               ]
+                            predict_label_batch = test_prediction_full_with_count[
+                                                  test_batch_size,
+                                                  d:d + self.input_size,
+                                                  h:h + self.input_size,
+                                                  w:w + self.input_size,
+                                                  :
+                                                  ]
 
                             # update network
-                            test_prediction = self.sess.run(self.predicted_label,
-                                                            feed_dict={self.input_image: test_data_batch})
-
+                            test_prediction_batch = self.sess.run(self.predicted_label,
+                                                                  feed_dict={self.input_image: test_data_batch})
+                            # TODO: add loss described in the paper
                             test_loss, dice_loss, weight_loss = self.sess.run(
                                 [self.total_loss, self.total_dice_loss, self.total_weight_loss],
                                 feed_dict={self.input_image: test_data_batch,
                                            self.input_ground_truth: test_label_batch})
 
                             '''Update record of prediction_full_batch'''
+                            for _label in range(3):
+                                _batch, _depth, _height, _width = np.where(test_prediction_batch == _label)
+                                predict_label_batch[_batch, _depth, _height, _width, _label] = \
+                                    predict_label_batch[_batch, _depth, _height, _width, _label] + 1
+
                             '''Extract information of loss'''
                             # Necessary to print info during test??
 
                             test_log.write('[label] ')
-                            test_log.write(str(np.unique(test_data_batch)))
                             test_log.write(str(np.unique(test_label_batch)))
-                            test_log.write(str(np.unique(test_prediction)))
+                            test_log.write(str(np.unique(test_prediction_batch)))
                             test_log.write('\n')
 
                             # loss_log.write('%s %s\n' % (train_loss, val_loss))
-                            output_format = '[Epoch] %d, time: %4.4f, test_loss: %.8f \n' \
+                            output_format = '[Sample] %d, time: %4.4f, test_loss: %.8f \n' \
                                             '[Loss] dice_loss: %.8f, weight_loss: %.8f \n\n' \
                                             % (ith_sample, time.time() - start_time, test_loss,
-                                               dice_loss * self.dice_loss_coefficient, weight_loss)
+                                               dice_loss, weight_loss)
                             test_log.write(output_format)
                             print(output_format, end='')
 
-                '''vote the information'''
+                '''Voting'''
+                final_test_prediction_full = np.argmax(test_prediction_full_with_count, axis=4)  # axis=-1
+                if final_test_prediction_full.shape != test_label_full.shape:
+                    print('Dimension mismatch of labels!')
+                    exit(1)
 
-                '''Revize the name of dice calculation'''
+                '''Revise the name of dice calculation'''
                 # Dice
                 dice = []
-                for i in range(self.output_channels):
+                for classify_label in range(self.output_channels):
                     intersection = np.sum(
-                        ((test_label_batch[:, :, :, :] == i) * 1) * ((test_prediction[:, :, :, :] == i) * 1)
+                        ((test_label_full[:, :, :, :] == classify_label) * 1) * (
+                            (final_test_prediction_full[:, :, :, :] == classify_label) * 1)
                     )
                     union = np.sum(
-                        ((test_label_batch[:, :, :, :] == i) * 1) + ((test_prediction[:, :, :, :] == i) * 1)
+                        ((test_label_full[:, :, :, :] == classify_label) * 1) + (
+                            (final_test_prediction_full[:, :, :, :] == classify_label) * 1)
                     ) + 1e-5
                     '''Why not necessary to square -> Check paper'''
                     dice.append(2.0 * intersection / union)
-                test_log.write('[Dice] %s \n' % dice)
+                print('[Dice] %d %s \n' % (ith_sample, dice), end='')
+                test_log.write('[Dice] %d %s \n' % (ith_sample, dice))
 
 
 if __name__ == '__main__':
