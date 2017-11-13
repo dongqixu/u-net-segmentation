@@ -307,8 +307,8 @@ class Unet3D(object):
                 # load batch
                 train_data_batch, train_label_batch = get_image_and_label_batch(
                     image_data_list, label_data_list, self.input_size, self.batch_size)
-                val_data_batch, val_label_batch = get_image_and_label_batch(
-                    image_data_list, label_data_list, self.input_size, self.batch_size)
+                # val_data_batch, val_label_batch = get_image_and_label_batch(
+                #     image_data_list, label_data_list, self.input_size, self.batch_size)
                 '''The same data at this stage'''
 
                 # update network
@@ -325,7 +325,7 @@ class Unet3D(object):
 
                 loss_log.write('[label] ')
                 loss_log.write(str(np.unique(train_label_batch)))
-                loss_log.write(str(np.unique(val_label_batch)))
+                # loss_log.write(str(np.unique(val_label_batch)))
                 # loss_log.write(str(np.unique(val_prediction)))
                 loss_log.write('\n')
 
