@@ -14,7 +14,7 @@ from loss_def import dice_loss_function, softmax_loss_function
 class Unet3D(object):
     def __init__(self, sess, parameter_dict):
         # member variables
-        self.loss_coefficient = 1e4
+        self.dice_loss_coefficient = 0
         
         self.input_image = None
         self.input_ground_truth = None
@@ -209,8 +209,8 @@ class Unet3D(object):
             self.auxiliary2_weight_loss * 0.6 + \
             self.auxiliary3_weight_loss * 0.3
 
-        # TODO: remove the dice loss?
-        self.total_loss = self.total_dice_loss * self.loss_coefficient + self.total_weight_loss
+        # deprecated: dice loss removed by zero coefficient
+        self.total_loss = self.total_dice_loss * self.dice_loss_coefficient + self.total_weight_loss
 
         # trainable variables
         self.trainable_variables = tf.trainable_variables()
@@ -346,7 +346,7 @@ class Unet3D(object):
                 output_format = '[Epoch] %d, time: %4.4f, train_loss: %.8f, val_loss: %.8f \n' \
                                 '[Loss] dice_loss: %.8f, weight_loss: %.8f \n\n'\
                                 % (epoch, time.time() - start_time, train_loss, val_loss,
-                                   dice_loss * self.loss_coefficient, weight_loss)
+                                   dice_loss * self.dice_loss_coefficient, weight_loss)
                 loss_log.write(output_format)
                 print(output_format, end='')
                 if np.mod(epoch+1, self.save_interval) == 0:
@@ -440,7 +440,7 @@ class Unet3D(object):
                             output_format = '[Epoch] %d, time: %4.4f, test_loss: %.8f \n' \
                                             '[Loss] dice_loss: %.8f, weight_loss: %.8f \n\n' \
                                             % (ith_sample, time.time() - start_time, test_loss,
-                                               dice_loss * self.loss_coefficient, weight_loss)
+                                               dice_loss * self.dice_loss_coefficient, weight_loss)
                             test_log.write(output_format)
                             print(output_format, end='')
 
