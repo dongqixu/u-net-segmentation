@@ -65,6 +65,7 @@ class Unet3D(object):
         self.name_with_runtime = parameter_dict['name_with_runtime']
         self.checkpoint_dir = parameter_dict['checkpoint_dir']
         self.resize_coefficient = parameter_dict['resize_coefficient']
+        self.test_stride = parameter_dict['test_stride']
 
         # from previous version
         self.save_interval = parameter_dict['save_interval']
@@ -352,7 +353,7 @@ class Unet3D(object):
                 print(output_format, end='')
                 if np.mod(epoch+1, self.save_interval) == 0:
                     self.save_checkpoint(self.checkpoint_dir, self.model_name, global_step=epoch+1)
-                    print('Model saved with epoch %d' % (epoch+1))
+                    print('[Save] Model saved with epoch %d' % (epoch+1))
 
     # May produce memory issue - not test
     def test(self):
@@ -390,13 +391,13 @@ class Unet3D(object):
             test_log.write('\n')
 
             for ith_sample in range(len(image_data_list)):
-                start_time = time.time()
+                sample_start_time = time.time()
                 test_batch_size = 1
                 test_image_data = image_data_list[ith_sample]
                 # output_channels -> number of class
                 # input_channels -> 1
                 ith_depth, ith_height, ith_width = test_image_data.shape
-                # final_prediction_label = np.zeros([ith_depth, ith_height, ith_width], dtype='int32')
+                # final_test_prediction_full = np.zeros([ith_depth, ith_height, ith_width], dtype='int32')
                 test_prediction_full_with_count = np.zeros(
                     [test_batch_size, ith_depth, ith_height, ith_width, self.output_channels], dtype='int32')
                 test_data_full = np.reshape(image_data_list[ith_sample].astype('float32'), [
@@ -404,10 +405,11 @@ class Unet3D(object):
                 test_label_full = np.reshape(label_data_list[ith_sample].astype('int32'), [
                     test_batch_size, ith_depth, ith_height, ith_width])
 
-                # boundary considered
-                depth_range = np.arange(ith_depth - self.input_size)
-                height_range = np.arange(ith_height - self.input_size)
-                width_range = np.arange(ith_width - self.input_size)
+                # TODO: boundary to be considered!
+                depth_range = np.arange(ith_depth - self.input_size, step=self.test_stride)
+                height_range = np.arange(ith_height - self.input_size, step=self.test_stride)
+                width_range = np.arange(ith_width - self.input_size, step=self.test_stride)
+                print(depth_range, height_range, width_range)
 
                 # TODO: critical!
                 '''
@@ -421,26 +423,38 @@ class Unet3D(object):
                 for d in depth_range:
                     for h in height_range:
                         for w in width_range:
+                            batch_start_time = time.time()
                             test_data_batch = test_data_full[
-                                               test_batch_size,
+                                               test_batch_size-1,
                                                d:d + self.input_size,
                                                h:h + self.input_size,
                                                w:w + self.input_size,
-                                               self.input_channels
+                                               self.input_channels-1
                                                ]
+                            test_data_batch = np.reshape(
+                                test_data_batch, [self.batch_size, self.input_size, self.input_size,
+                                                  self.input_size, self.input_channels])
+
                             test_label_batch = test_label_full[
-                                               test_batch_size,
+                                               test_batch_size-1,
                                                d:d + self.input_size,
                                                h:h + self.input_size,
                                                w:w + self.input_size
                                                ]
+                            test_label_batch = np.reshape(
+                                test_label_batch, [
+                                    self.batch_size, self.input_size, self.input_size, self.input_size])
+
                             predict_label_batch = test_prediction_full_with_count[
-                                                  test_batch_size,
+                                                  test_batch_size-1,
                                                   d:d + self.input_size,
                                                   h:h + self.input_size,
                                                   w:w + self.input_size,
                                                   :
                                                   ]
+                            predict_label_batch = np.reshape(
+                                predict_label_batch, [self.batch_size, self.input_size, self.input_size,
+                                                      self.input_size, self.output_channels])
 
                             # update network
                             test_prediction_batch = self.sess.run(self.predicted_label,
@@ -460,15 +474,17 @@ class Unet3D(object):
                             '''Extract information of loss'''
                             # Necessary to print info during test??
 
-                            test_log.write('[label] ')
-                            test_log.write(str(np.unique(test_label_batch)))
-                            test_log.write(str(np.unique(test_prediction_batch)))
-                            test_log.write('\n')
+                            unique = f'[label] {str(np.unique(test_label_batch))} ' \
+                                     f'{str(np.unique(test_prediction_batch))}\n'
+                            test_log.write(unique)
+                            print(unique)
 
                             # loss_log.write('%s %s\n' % (train_loss, val_loss))
-                            output_format = '[Sample] %d, time: %4.4f, test_loss: %.8f \n' \
+                            output_format = '[DHW] %f, %f, %f\n' \
+                                            '[Sample] %d, time: %4.4f, test_loss: %.8f \n' \
                                             '[Loss] dice_loss: %.8f, weight_loss: %.8f \n\n' \
-                                            % (ith_sample, time.time() - start_time, test_loss,
+                                            % (d/depth_range[-1], h/height_range[-1], w/width_range[-1],
+                                               ith_sample, time.time() - batch_start_time, test_loss,
                                                dice_loss, weight_loss)
                             test_log.write(output_format)
                             print(output_format, end='')
@@ -493,8 +509,26 @@ class Unet3D(object):
                     ) + 1e-5
                     '''Why not necessary to square -> Check paper'''
                     dice.append(2.0 * intersection / union)
-                print('[Dice] %d %s \n' % (ith_sample, dice), end='')
-                test_log.write('[Dice] %d %s \n' % (ith_sample, dice))
+
+                # Accuracy overall
+                correct_count = np.sum((test_label_full == final_test_prediction_full) * 1)
+                total_count = test_batch_size * ith_depth * ith_height * ith_width
+                accuracy = correct_count / total_count
+                accuracy_with_label = []
+                for _label in range(3):
+                    _correct = np.sum(
+                        (
+                            ((test_label_full == final_test_prediction_full) * 1) *
+                            ((final_test_prediction_full == _label) * 1)
+                        ))
+                    _total = np.sum((test_label_full == _label) * 1)
+                    accuracy_with_label.append([_correct/_total, _correct, _total])
+
+                output_format = f'[Dice] Sample: {ith_sample}, dice_loss: {dice}\n' \
+                                f'[Time] {time.time() - sample_start_time}\n' \
+                                f'[Accuracy] {accuracy} {accuracy_with_label}\n\n'
+                print(output_format, end='')
+                test_log.write(output_format)
 
 
 if __name__ == '__main__':

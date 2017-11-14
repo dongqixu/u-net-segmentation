@@ -28,6 +28,7 @@ def init_parameter(name):
     parameter_dict['name_with_runtime'] = name
     parameter_dict['checkpoint_dir'] = "checkpoint/"
     parameter_dict['resize_coefficient'] = 1.0
+    parameter_dict['test_stride'] = 32  # for overlap
     # from previous version
     parameter_dict['save_interval'] = 10000
     parameter_dict['cube_overlapping_factor'] = 4
@@ -51,7 +52,10 @@ def main(_):
     os.environ["CUDA_VISIBLE_DEVICES"] = gpu
 
     # name the model
-    name = 'test'
+    if args.test:
+        name = 'test'
+    else:
+        name = 'train'
     current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
     name = name + '_' + current_time
 
