@@ -2,6 +2,7 @@ import copy
 import nibabel as nib
 import numpy as np
 import sys
+import time
 from skimage.transform import resize
 
 ''' Data loading and IO '''
@@ -52,7 +53,7 @@ def load_image_and_label(image_filelist, label_filelist, resize_coefficient=1):
     return image_data_list, label_data_list
 
 
-# generate batch
+# generate batch, only for train phase
 def get_image_and_label_batch(image_data_list, label_data_list, input_size, batch_size,
                               channel=1, flip_flag=False, rotation_flag=False):
     image_batch = np.zeros([batch_size, input_size, input_size, input_size, channel], dtype='float32')
@@ -69,29 +70,39 @@ def get_image_and_label_batch(image_data_list, label_data_list, input_size, batc
 
         # randomly select cube -> boundary considered
         depth, height, width = random_image.shape
-        depth_random = np.arange(depth - input_size)
-        np.random.shuffle(depth_random)
-        height_random = np.arange(height - input_size)
-        np.random.shuffle(height_random)
-        width_random = np.arange(width - input_size)
-        np.random.shuffle(width_random)
+        label_temp = None
+        image_temp = None
+        pass_flag = False
+        while not pass_flag:
+            depth_select = np.random.randint(depth - input_size)
+            height_select = np.random.randint(height - input_size)
+            width_select = np.random.randint(width - input_size)
 
-        # cropping
-        crop_position = np.array([depth_random[0], height_random[0], width_random[0]])
-        image_temp = copy.deepcopy(
-            random_image[
-                crop_position[0]:crop_position[0] + input_size,
-                crop_position[1]:crop_position[1] + input_size,
-                crop_position[2]:crop_position[2] + input_size
-            ]
-        )
-        label_temp = copy.deepcopy(
-            random_label[
-                crop_position[0]:crop_position[0] + input_size,
-                crop_position[1]:crop_position[1] + input_size,
-                crop_position[2]:crop_position[2] + input_size
-            ]
-        )
+            # cropping
+            crop_position = np.array([depth_select, height_select, width_select])
+            label_temp = random_label[
+                         crop_position[0]:crop_position[0] + input_size,
+                         crop_position[1]:crop_position[1] + input_size,
+                         crop_position[2]:crop_position[2] + input_size
+                         ]
+
+            # 0,1,2,3,4 -> pass
+            if set(np.unique(label_temp)) == {0} and np.random.randint(1000) >= 5:
+                # print('*', end='')
+                continue
+            else:
+                pass_flag = True
+
+            image_temp = random_image[
+                         crop_position[0]:crop_position[0] + input_size,
+                         crop_position[1]:crop_position[1] + input_size,
+                         crop_position[2]:crop_position[2] + input_size
+                         ]
+
+        # deprecated: check
+        # if image_temp is None or label_temp is None:
+        #     print('Fatal error with None batch')
+        #     exit(1)
 
         '''Necessary? Zero problem may happen'''
         # Already perform normalization over the whole dataset
@@ -183,20 +194,22 @@ if __name__ == '__main__':
     image_data_list, label_data_list = load_image_and_label(image_list, label_list, resize_coefficient=1)
     print('images loaded...')
 
-    # print data range
-    for i in range(len(image_data_list)):
-        print(image_data_list[i].dtype, label_data_list[i].dtype)
+    # # print data range
+    # for i in range(len(image_data_list)):
+    #     print(image_data_list[i].dtype, label_data_list[i].dtype)
     #     print(f'Batch {i}:', end='')
     #     print(np.amin(image_data_list[i]), np.amax(image_data_list[i]), end='')
     #     print(np.amin(label_data_list[i]), np.amax(label_data_list[i]))
 
     # Testing batch
-    for i in range(1):
+    for i in range(100):
+        start_time = time.time()
         image_batch, label_batch = get_image_and_label_batch(image_data_list, label_data_list, input_size=64,
                                                              batch_size=1, channel=1)
+        # print(f'Loading time: {time.time() - start_time}')
         # print('data: ', end='')
         # print(image_batch.shape)
         # print('label ', end='')
         # print(label_batch.shape)
-        slice_visualization(image_batch, label_batch, batch=True)
+        # slice_visualization(image_batch, label_batch, batch=True)
     slice_visualization(image_data_list[0], label_data_list[0])
