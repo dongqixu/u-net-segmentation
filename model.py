@@ -356,31 +356,40 @@ class Unet3D(object):
                     print('[Save] Model saved with epoch %d' % (epoch+1))
 
     # May produce memory issue - not test
-    def test(self):
-        # initialization
-        variables_initialization = tf.global_variables_initializer()
-        self.sess.run(variables_initialization)
+    def test(self, initialization=True, image_label_dict=None):
+        image_data_list = None
+        label_data_list = None
+        if not initialization and image_label_dict is None:
+            print(' [!] Fatal Error: no feeding data')
+            return
+        if initialization:
+            # initialization
+            variables_initialization = tf.global_variables_initializer()
+            self.sess.run(variables_initialization)
 
-        # TODO: load pre-trained model
-        # TODO: load checkpoint
-        if self.load_checkpoint(self.checkpoint_dir):
-            print(" [*] Load Success")
+            # TODO: load pre-trained model
+            # TODO: load checkpoint
+            if self.load_checkpoint(self.checkpoint_dir):
+                print(" [*] Load Success")
+            else:
+                print(" [!] Load Failed")
+                exit(1)  # exit with load error
+
+            # save log
+            if not os.path.exists('logs/'):
+                os.makedirs('logs/')
+            self.log_writer = tf.summary.FileWriter(logdir='logs/', graph=self.sess.graph)
+
+            # load all volume files
+            image_list = glob(pathname='{}/*.nii.gz'.format(self.train_data_dir))
+            label_list = glob(pathname='{}/*.nii.gz'.format(self.label_data_dir))
+            image_list.sort()
+            label_list.sort()
+            image_data_list, label_data_list = load_image_and_label(image_list, label_list, self.resize_coefficient)
+            print('Data loaded successfully.')
         else:
-            print(" [!] Load Failed")
-            exit(1)  # exit with load error
-
-        # save log
-        if not os.path.exists('logs/'):
-            os.makedirs('logs/')
-        self.log_writer = tf.summary.FileWriter(logdir='logs/', graph=self.sess.graph)
-
-        # load all volume files
-        image_list = glob(pathname='{}/*.nii.gz'.format(self.train_data_dir))
-        label_list = glob(pathname='{}/*.nii.gz'.format(self.label_data_dir))
-        image_list.sort()
-        label_list.sort()
-        image_data_list, label_data_list = load_image_and_label(image_list, label_list, self.resize_coefficient)
-        print('Data loaded successfully.')
+            image_data_list = image_label_dict['image_data_list']
+            label_data_list = image_label_dict['label_data_list']
 
         if not os.path.exists('test/'):
             os.makedirs('test/')
@@ -431,6 +440,7 @@ class Unet3D(object):
                                                w:w + self.input_size,
                                                self.input_channels-1
                                                ]
+                            # numpy property of shape of broadcasting
                             test_data_batch = np.reshape(
                                 test_data_batch, [self.batch_size, self.input_size, self.input_size,
                                                   self.input_size, self.input_channels])
