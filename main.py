@@ -14,9 +14,9 @@ def init_parameter(name):
     # current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
     parameter_dict['phase'] = "train"
     parameter_dict['batch_size'] = 1
-    parameter_dict['input_size'] = 96
+    parameter_dict['input_size'] = 64
     parameter_dict['input_channels'] = 1
-    parameter_dict['output_size'] = 96
+    parameter_dict['output_size'] = 64
     parameter_dict['output_channels'] = 3
     parameter_dict['learning_rate'] = 0.001
     parameter_dict['beta1'] = 0.5
@@ -29,7 +29,7 @@ def init_parameter(name):
     parameter_dict['checkpoint_dir'] = "checkpoint/"
     parameter_dict['resize_coefficient'] = 1.0
     # from previous version
-    parameter_dict['save_interval'] = 2000
+    parameter_dict['save_interval'] = 10000
     parameter_dict['cube_overlapping_factor'] = 4
     parameter_dict['gpu'] = '0,1'
 
@@ -67,7 +67,7 @@ def main(_):
     print(parameter_json)
 
     # gpu processing, for further set
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.95, allow_growth=True)
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.475, allow_growth=True)
 
     with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placement=True)) as sess:
         model = Unet3D(sess=sess, parameter_dict=parameter_dict)

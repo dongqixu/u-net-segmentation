@@ -192,7 +192,7 @@ if __name__ == '__main__':
 
     # Testing batch
     for i in range(1):
-        image_batch, label_batch = get_image_and_label_batch(image_data_list, label_data_list, input_size=96,
+        image_batch, label_batch = get_image_and_label_batch(image_data_list, label_data_list, input_size=64,
                                                              batch_size=1, channel=1)
         # print('data: ', end='')
         # print(image_batch.shape)
