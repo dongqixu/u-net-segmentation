@@ -67,6 +67,9 @@ class Unet3D(object):
         self.resize_coefficient = parameter_dict['resize_coefficient']
         self.test_stride = parameter_dict['test_stride']
 
+        # scalable number of feature maps: default 32
+        self.feat_num = parameter_dict['feature_number']
+
         # from previous version
         self.save_interval = parameter_dict['save_interval']
         self.cube_overlapping_factor = parameter_dict['cube_overlapping_factor']
@@ -83,9 +86,9 @@ class Unet3D(object):
         # TODO: make the feature number variant
         with tf.device(device_name_or_function=self.device[0]):
             # first level
-            encoder1_1 = conv_bn_relu(inputs=inputs, output_channels=32, kernel_size=3, stride=1,
+            encoder1_1 = conv_bn_relu(inputs=inputs, output_channels=self.feat_num, kernel_size=3, stride=1,
                                       is_training=is_training, name='encoder1_1')
-            encoder1_2 = conv_bn_relu(inputs=encoder1_1, output_channels=64, kernel_size=3, stride=1,
+            encoder1_2 = conv_bn_relu(inputs=encoder1_1, output_channels=self.feat_num*2, kernel_size=3, stride=1,
                                       is_training=is_training, name='encoder1_2')
             pool1 = tf.layers.max_pooling3d(
                 inputs=encoder1_2,
@@ -96,21 +99,21 @@ class Unet3D(object):
                 name='pool1'
             )
             # second level
-            encoder2_1 = conv_bn_relu(inputs=pool1, output_channels=64, kernel_size=3, stride=1,
+            encoder2_1 = conv_bn_relu(inputs=pool1, output_channels=self.feat_num*2, kernel_size=3, stride=1,
                                       is_training=is_training, name='encoder2_1')
-            encoder2_2 = conv_bn_relu(inputs=encoder2_1, output_channels=128, kernel_size=3, stride=1,
+            encoder2_2 = conv_bn_relu(inputs=encoder2_1, output_channels=self.feat_num*4, kernel_size=3, stride=1,
                                       is_training=is_training, name='encoder2_2')
             pool2 = tf.layers.max_pooling3d(inputs=encoder2_2, pool_size=2, strides=2, name='pool2')
             # third level
-            encoder3_1 = conv_bn_relu(inputs=pool2, output_channels=128, kernel_size=3, stride=1,
+            encoder3_1 = conv_bn_relu(inputs=pool2, output_channels=self.feat_num*4, kernel_size=3, stride=1,
                                       is_training=is_training, name='encoder3_1')
-            encoder3_2 = conv_bn_relu(inputs=encoder3_1, output_channels=256, kernel_size=3, stride=1,
+            encoder3_2 = conv_bn_relu(inputs=encoder3_1, output_channels=self.feat_num*8, kernel_size=3, stride=1,
                                       is_training=is_training, name='encoder3_2')
             pool3 = tf.layers.max_pooling3d(inputs=encoder3_2, pool_size=2, strides=2, name='pool3')
             # forth level
-            encoder4_1 = conv_bn_relu(inputs=pool3, output_channels=256, kernel_size=3, stride=1,
+            encoder4_1 = conv_bn_relu(inputs=pool3, output_channels=self.feat_num*8, kernel_size=3, stride=1,
                                       is_training=is_training, name='encoder4_1')
-            encoder4_2 = conv_bn_relu(inputs=encoder4_1, output_channels=512, kernel_size=3, stride=1,
+            encoder4_2 = conv_bn_relu(inputs=encoder4_1, output_channels=self.feat_num*16, kernel_size=3, stride=1,
                                       is_training=is_training, name='encoder4_2')
             bottom = encoder4_2
 
@@ -118,28 +121,28 @@ class Unet3D(object):
         # device: gpu1
         with tf.device(device_name_or_function=self.device[1]):
             # third level
-            deconv3 = deconv_bn_relu(inputs=bottom, output_channels=512, is_training=is_training,
+            deconv3 = deconv_bn_relu(inputs=bottom, output_channels=self.feat_num*16, is_training=is_training,
                                      name='deconv3')
             concat_3 = tf.concat([deconv3, encoder3_2], axis=concat_dimension, name='concat_3')
-            decoder3_1 = conv_bn_relu(inputs=concat_3, output_channels=256, kernel_size=3, stride=1,
+            decoder3_1 = conv_bn_relu(inputs=concat_3, output_channels=self.feat_num*8, kernel_size=3, stride=1,
                                       is_training=is_training, name='decoder3_1')
-            decoder3_2 = conv_bn_relu(inputs=decoder3_1, output_channels=256, kernel_size=3, stride=1,
+            decoder3_2 = conv_bn_relu(inputs=decoder3_1, output_channels=self.feat_num*8, kernel_size=3, stride=1,
                                       is_training=is_training, name='decoder3_2')
             # second level
-            deconv2 = deconv_bn_relu(inputs=decoder3_2, output_channels=256, is_training=is_training,
+            deconv2 = deconv_bn_relu(inputs=decoder3_2, output_channels=self.feat_num*8, is_training=is_training,
                                      name='deconv2')
             concat_2 = tf.concat([deconv2, encoder2_2], axis=concat_dimension, name='concat_2')
-            decoder2_1 = conv_bn_relu(inputs=concat_2, output_channels=128, kernel_size=3, stride=1,
+            decoder2_1 = conv_bn_relu(inputs=concat_2, output_channels=self.feat_num*4, kernel_size=3, stride=1,
                                       is_training=is_training, name='decoder2_1')
-            decoder2_2 = conv_bn_relu(inputs=decoder2_1, output_channels=128, kernel_size=3, stride=1,
+            decoder2_2 = conv_bn_relu(inputs=decoder2_1, output_channels=self.feat_num*4, kernel_size=3, stride=1,
                                       is_training=is_training, name='decoder2_2')
             # first level
-            deconv1 = deconv_bn_relu(inputs=decoder2_2, output_channels=128, is_training=is_training,
+            deconv1 = deconv_bn_relu(inputs=decoder2_2, output_channels=self.feat_num*4, is_training=is_training,
                                      name='deconv1')
             concat_1 = tf.concat([deconv1, encoder1_2], axis=concat_dimension, name='concat_1')
-            decoder1_1 = conv_bn_relu(inputs=concat_1, output_channels=64, kernel_size=3, stride=1,
+            decoder1_1 = conv_bn_relu(inputs=concat_1, output_channels=self.feat_num*2, kernel_size=3, stride=1,
                                       is_training=is_training, name='decoder1_1')
-            decoder1_2 = conv_bn_relu(inputs=decoder1_1, output_channels=64, kernel_size=3, stride=1,
+            decoder1_2 = conv_bn_relu(inputs=decoder1_1, output_channels=self.feat_num*2, kernel_size=3, stride=1,
                                       is_training=is_training, name='decoder1_2')
             feature = decoder1_2
             # predicted probability
@@ -419,15 +422,6 @@ class Unet3D(object):
                 height_range = np.arange(ith_height - self.input_size, step=self.test_stride)
                 width_range = np.arange(ith_width - self.input_size, step=self.test_stride)
                 print(depth_range, height_range, width_range)
-
-                # TODO: critical!
-                '''
-                update network
-                
-                get the label, loss still OK
-                
-                calculate the dice -> and other standard
-                '''
 
                 for d in depth_range:
                     for h in height_range:

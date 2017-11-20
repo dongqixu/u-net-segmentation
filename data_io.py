@@ -85,14 +85,12 @@ def get_image_and_label_batch(image_data_list, label_data_list, input_size, batc
                          crop_position[1]:crop_position[1] + input_size,
                          crop_position[2]:crop_position[2] + input_size
                          ]
-
             # 0,1,2,3,4 -> pass
             if set(np.unique(label_temp)) == {0} and np.random.randint(1000) >= 5:
                 # print('*', end='')
                 continue
             else:
                 pass_flag = True
-
             image_temp = random_image[
                          crop_position[0]:crop_position[0] + input_size,
                          crop_position[1]:crop_position[1] + input_size,
