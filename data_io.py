@@ -195,9 +195,9 @@ if __name__ == '__main__':
     image_data_list, label_data_list = load_image_and_label(image_list, label_list, resize_coefficient=1)
     print('images loaded...')
 
-    # # print data range
-    # for i in range(len(image_data_list)):
-    #     print(image_data_list[i].dtype, label_data_list[i].dtype)
+    # print data range
+    for i in range(len(image_data_list)):
+        print(image_data_list[i].shape, label_data_list[i].shape)
     #     print(f'Batch {i}:', end='')
     #     print(np.amin(image_data_list[i]), np.amax(image_data_list[i]), end='')
     #     print(np.amin(label_data_list[i]), np.amax(label_data_list[i]))

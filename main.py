@@ -36,8 +36,8 @@ def init_parameter(name):
 
     # scalable number of feature maps: default 32
     parameter_dict['feature_number'] = 16  # 32 -> 16
-    parameter_dict['index_start'] = 0
-    parameter_dict['index_included'] = 1
+    parameter_dict['index_start'] = 7
+    parameter_dict['index_included'] = 7
 
     return parameter_dict
 
@@ -45,8 +45,9 @@ def init_parameter(name):
 # What is the input parameter
 def main(_):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-g', '--gpu', help="cuda visible devices")
+    parser.add_argument('-g', '--gpu', help='cuda visible devices')
     parser.add_argument('-t', '--test', action='store_true')
+    parser.add_argument('-s', '--sample', help='sample selection')
     args = parser.parse_args()
     if args.gpu:
         gpu = args.gpu
@@ -70,6 +71,17 @@ def main(_):
         parameter_dict['gpu'] = args.gpu
     if args.test:
         parameter_dict['phase'] = 'test'
+    if args.sample:
+        sample_select = args.sample.strip().split(',')
+        if len(sample_select) == 1:
+            parameter_dict['index_start'] = int(sample_select[0])
+            parameter_dict['index_included'] = int(sample_select[0])
+        elif len(sample_select) == 2 and sample_select[1] != '':
+            parameter_dict['index_start'] = int(sample_select[0])
+            parameter_dict['index_included'] = int(sample_select[1])
+        else:
+            print('[!] Error parameter with 401 error code.')
+            exit(401)
     if not os.path.exists('json/'):
         os.makedirs('json/')
     parameter_json = dict_to_json(parameter_dict, write_file=True, file_name='json/parameter_' + name + '.json')

@@ -242,7 +242,7 @@ class Unet3D(object):
                     self.fine_tuning_variables.append(variable)
                     break  # not necessary to continue
 
-        self.saver = tf.train.Saver()
+        self.saver = tf.train.Saver(max_to_keep=20)
         self.saver_fine_tuning = tf.train.Saver(self.fine_tuning_variables)
         # The Saver class adds ops to save and restore variables to and from checkpoints.
         # It also provides convenience methods to run these ops.
@@ -397,6 +397,7 @@ class Unet3D(object):
             label_list = glob(pathname='{}/*.nii.gz'.format(self.label_data_dir))
             image_list.sort()
             label_list.sort()
+            # no selection on test
             image_data_list, label_data_list = load_image_and_label(image_list, label_list, self.resize_coefficient)
             print('Data loaded successfully.')
         else:
