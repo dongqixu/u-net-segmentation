@@ -74,6 +74,7 @@ class Unet3D(object):
 
         # from previous version
         self.save_interval = parameter_dict['save_interval']
+        self.test_interval = parameter_dict['test_interval']
         self.cube_overlapping_factor = parameter_dict['cube_overlapping_factor']
 
         # build model
@@ -297,13 +298,19 @@ class Unet3D(object):
         label_list = glob(pathname='{}/*.nii.gz'.format(self.label_data_dir))
         image_list.sort()
         label_list.sort()
+        image_data_list_full, label_data_list_full = load_image_and_label(
+            image_list, label_list, self.resize_coefficient)
+        # dictionary passing for test
+        image_label_dict = dict()
+        image_label_dict['image_data_list_full'] = image_data_list_full
+        image_label_dict['label_data_list_full'] = label_data_list_full
         # sample selection
         index_start = self.index_start
         index_excluded = self.index_included + 1
-        image_list = image_list[index_start:index_excluded]
-        label_list = label_list[index_start:index_excluded]
-        print('Selected samples: ', image_list, label_list)
-        image_data_list, label_data_list = load_image_and_label(image_list, label_list, self.resize_coefficient)
+        image_data_list = image_data_list_full[index_start:index_excluded]
+        label_data_list = label_data_list_full[index_start:index_excluded]
+        print('Selected samples: ', image_list[index_start:index_excluded],
+              label_list[index_start:index_excluded])
         print('Data loaded successfully.')
 
         if not os.path.exists('loss/'):
@@ -359,18 +366,21 @@ class Unet3D(object):
                 # deprecated: remove validation loss, dice loss original
                 output_format = '[Epoch] %d, time: %4.4f, train_loss: %.8f \n' \
                                 '[Loss] dice_loss: %.8f, weight_loss: %.8f \n\n'\
-                                % (epoch, time.time() - start_time, train_loss,
+                                % (epoch+1, time.time() - start_time, train_loss,
                                    dice_loss, weight_loss)
                 loss_log.write(output_format)
                 print(output_format, end='')
                 if np.mod(epoch+1, self.save_interval) == 0:
                     self.save_checkpoint(self.checkpoint_dir, self.model_name, global_step=epoch+1)
                     print('[Save] Model saved with epoch %d' % (epoch+1))
+                # TODO: test
+                if np.mod(epoch + 1, self.test_interval) == 0:
+                    self.test(initialization=False, image_label_dict=image_label_dict, train_epoch=epoch+1)
 
     # May produce memory issue - not test
-    def test(self, initialization=True, image_label_dict=None):
-        image_data_list = None
-        label_data_list = None
+    def test(self, initialization=True, image_label_dict=None, train_epoch=None):
+        image_data_list_full = None
+        label_data_list_full = None
         if not initialization and image_label_dict is None:
             print(' [!] Fatal Error: no feeding data')
             return
@@ -398,33 +408,39 @@ class Unet3D(object):
             image_list.sort()
             label_list.sort()
             # no selection on test
-            image_data_list, label_data_list = load_image_and_label(image_list, label_list, self.resize_coefficient)
+            image_data_list_full, label_data_list_full = load_image_and_label(
+                image_list, label_list, self.resize_coefficient)
             print('Data loaded successfully.')
         else:
-            image_data_list = image_label_dict['image_data_list']
-            label_data_list = image_label_dict['label_data_list']
+            image_data_list_full = image_label_dict['image_data_list_full']
+            label_data_list_full = image_label_dict['label_data_list_full']
 
         if not os.path.exists('test/'):
             os.makedirs('test/')
         line_buffer = 1
-        with open(file='test/test_'+self.name_with_runtime+'.txt', mode='w', buffering=line_buffer) as test_log:
-            test_log.write('[Test Mode]\n')
-            test_log.write(dict_to_json(self.parameter_dict))
-            test_log.write('\n')
+        # appending
+        with open(file='test/test_'+self.name_with_runtime+'.txt', mode='a', buffering=line_buffer) as test_log:
+            if train_epoch is None:
+                test_log.write('[Test Mode]\n')
+                test_log.write(dict_to_json(self.parameter_dict))
+                test_log.write('\n')
+            else:
+                print(f'========== [Test] Epoch {train_epoch} ==========\n')
+                test_log.write(f'========== [Test] Epoch {train_epoch} ==========\n')
 
-            for ith_sample in range(len(image_data_list)):
+            for ith_sample in range(len(image_data_list_full)):
                 sample_start_time = time.time()
                 test_batch_size = 1
-                test_image_data = image_data_list[ith_sample]
+                test_image_data = image_data_list_full[ith_sample]
                 # output_channels -> number of class
                 # input_channels -> 1
                 ith_depth, ith_height, ith_width = test_image_data.shape
                 # final_test_prediction_full = np.zeros([ith_depth, ith_height, ith_width], dtype='int32')
                 test_prediction_full_with_count = np.zeros(
                     [test_batch_size, ith_depth, ith_height, ith_width, self.output_channels], dtype='int32')
-                test_data_full = np.reshape(image_data_list[ith_sample].astype('float32'), [
+                test_data_full = np.reshape(image_data_list_full[ith_sample].astype('float32'), [
                     test_batch_size, ith_depth, ith_height, ith_width, self.input_channels])
-                test_label_full = np.reshape(label_data_list[ith_sample].astype('int32'), [
+                test_label_full = np.reshape(label_data_list_full[ith_sample].astype('int32'), [
                     test_batch_size, ith_depth, ith_height, ith_width])
 
                 # TODO: boundary to be considered!
@@ -491,7 +507,7 @@ class Unet3D(object):
                             unique = f'[label] {str(np.unique(test_label_batch))} ' \
                                      f'{str(np.unique(test_prediction_batch))}\n'
                             test_log.write(unique)
-                            print(unique)
+                            # print(unique)
 
                             # loss_log.write('%s %s\n' % (train_loss, val_loss))
                             output_format = '[DHW] %f, %f, %f\n' \
@@ -501,7 +517,7 @@ class Unet3D(object):
                                                ith_sample, time.time() - batch_start_time, test_loss,
                                                dice_loss, weight_loss)
                             test_log.write(output_format)
-                            print(output_format, end='')
+                            # print(output_format, end='')
 
                 '''Voting'''
                 final_test_prediction_full = np.argmax(test_prediction_full_with_count, axis=4)  # axis=-1

@@ -31,6 +31,7 @@ def init_parameter(name):
     parameter_dict['test_stride'] = 32  # for overlap
     # from previous version
     parameter_dict['save_interval'] = 1000  # 10000 -> 1000
+    parameter_dict['test_interval'] = 1000
     parameter_dict['cube_overlapping_factor'] = 4
     parameter_dict['gpu'] = '0,1'
 
