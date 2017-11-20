@@ -69,6 +69,8 @@ class Unet3D(object):
 
         # scalable number of feature maps: default 32
         self.feat_num = parameter_dict['feature_number']
+        self.index_start = parameter_dict['index_start']
+        self.index_included = parameter_dict['index_included']
 
         # from previous version
         self.save_interval = parameter_dict['save_interval']
@@ -83,7 +85,6 @@ class Unet3D(object):
 
         # down-sampling path
         # device: gpu0
-        # TODO: make the feature number variant
         with tf.device(device_name_or_function=self.device[0]):
             # first level
             encoder1_1 = conv_bn_relu(inputs=inputs, output_channels=self.feat_num, kernel_size=3, stride=1,
@@ -248,7 +249,8 @@ class Unet3D(object):
         print('Model built successfully.')
 
     def save_checkpoint(self, checkpoint_dir, model_name, global_step):
-        model_dir = '%s_%s' % (self.batch_size, self.output_size)
+        model_dir = '%s_%s_%s_s%s-%s' % (self.feat_num, self.batch_size, self.output_size,
+                                         self.index_start, self.index_included)
         '''Why?'''
         checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
         if not os.path.exists(checkpoint_dir):
@@ -258,7 +260,8 @@ class Unet3D(object):
 
     # TODO: load check point -> To be checked!
     def load_checkpoint(self, checkpoint_dir):
-        model_dir = '%s_%s' % (self.batch_size, self.output_size)
+        model_dir = '%s_%s_%s_s%s-%s' % (self.feat_num, self.batch_size, self.output_size,
+                                         self.index_start, self.index_included)
         checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
 
         checkpoint_state = tf.train.get_checkpoint_state(checkpoint_dir)
@@ -294,6 +297,12 @@ class Unet3D(object):
         label_list = glob(pathname='{}/*.nii.gz'.format(self.label_data_dir))
         image_list.sort()
         label_list.sort()
+        # sample selection
+        index_start = self.index_start
+        index_excluded = self.index_included + 1
+        image_list = image_list[index_start:index_excluded]
+        label_list = label_list[index_start:index_excluded]
+        print('Selected samples: ', image_list, label_list)
         image_data_list, label_data_list = load_image_and_label(image_list, label_list, self.resize_coefficient)
         print('Data loaded successfully.')
 
@@ -327,11 +336,11 @@ class Unet3D(object):
                 # val_prediction = self.sess.run(self.predicted_label,
                 #                                feed_dict={self.input_image: val_data_batch})
 
-                loss_log.write('[label] ')
-                loss_log.write(str(np.unique(train_label_batch)))
                 # loss_log.write(str(np.unique(val_label_batch)))
                 # loss_log.write(str(np.unique(val_prediction)))
-                loss_log.write('\n')
+                string_format = f'[label] {str(np.unique(train_label_batch))} \n'
+                loss_log.write(string_format)
+                print(string_format, end='')
 
                 # TODO: Dice? Problem?
                 # dice = []

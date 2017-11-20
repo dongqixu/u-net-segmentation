@@ -20,7 +20,7 @@ def init_parameter(name):
     parameter_dict['output_channels'] = 3
     parameter_dict['learning_rate'] = 0.001
     parameter_dict['beta1'] = 0.5
-    parameter_dict['epoch'] = 100000
+    parameter_dict['epoch'] = 10000  # 100000 -> 10000
     parameter_dict['train_data_dir'] = "../hvsmr/data/"
     parameter_dict['test_data_dir'] = "../hvsmr/data/"
     parameter_dict['label_data_dir'] = "../hvsmr/label"
@@ -30,12 +30,14 @@ def init_parameter(name):
     parameter_dict['resize_coefficient'] = 1.0
     parameter_dict['test_stride'] = 32  # for overlap
     # from previous version
-    parameter_dict['save_interval'] = 10000
+    parameter_dict['save_interval'] = 1000  # 10000 -> 1000
     parameter_dict['cube_overlapping_factor'] = 4
     parameter_dict['gpu'] = '0,1'
 
     # scalable number of feature maps: default 32
-    parameter_dict['feature_number'] = 32
+    parameter_dict['feature_number'] = 16  # 32 -> 16
+    parameter_dict['index_start'] = 0
+    parameter_dict['index_included'] = 1
 
     return parameter_dict
 
