@@ -526,19 +526,28 @@ class Unet3D(object):
                     exit(1)
 
                 '''Revise the name of dice calculation'''
-                # Dice
+                # Dice and Jaccard
                 dice = []
+                jaccard = []
+                volumetric_overlap_error = []
+                volume_difference = []
                 for classify_label in range(self.output_channels):
-                    intersection = np.sum(
-                        ((test_label_full[:, :, :, :] == classify_label) * 1) * (
-                            (final_test_prediction_full[:, :, :, :] == classify_label) * 1)
-                    )
-                    union = np.sum(
-                        ((test_label_full[:, :, :, :] == classify_label) * 1) + (
-                            (final_test_prediction_full[:, :, :, :] == classify_label) * 1)
-                    ) + 1e-5
-                    '''Why not necessary to square -> Check paper'''
-                    dice.append(2.0 * intersection / union)
+                    _ground = (test_label_full[:, :, :, :] == classify_label) * 1
+                    _result = (final_test_prediction_full[:, :, :, :] == classify_label) * 1
+                    # intersection
+                    intersection = np.sum(_result * _ground)
+                    # summation
+                    _addition = _ground + _result
+                    summation_result = np.sum(_result)
+                    summation_ground = np.sum(_ground)
+                    summation = summation_result + summation_ground + 1e-5
+                    # union
+                    union = np.sum((_addition[:, :, :, :] > 0) * 1) + 1e-5
+                    # appending
+                    dice.append(2.0 * intersection / summation)
+                    jaccard.append(intersection / union)
+                    volumetric_overlap_error.append(1 - intersection / union)
+                    volume_difference.append((summation_result - summation_ground) / summation_ground)
 
                 # Accuracy overall
                 correct_count = np.sum((test_label_full == final_test_prediction_full) * 1)
@@ -554,7 +563,10 @@ class Unet3D(object):
                     _total = np.sum((test_label_full == _label) * 1)
                     accuracy_with_label.append([_correct/_total, _correct, _total])
 
-                output_format = f'[Dice] Sample: {ith_sample}, dice_loss: {dice}\n' \
+                output_format = f'[Dice] Sample: {ith_sample}, Dice: {dice}\n' \
+                                f'[Jaccard] Sample: {ith_sample}, Jaccard: {jaccard}\n' \
+                                f'[VOE] Sample: {ith_sample}, VOE: {volumetric_overlap_error}\n' \
+                                f'[VD] Sample: {ith_sample}, VD: {volume_difference}\n' \
                                 f'[Time] {time.time() - sample_start_time}\n' \
                                 f'[Accuracy] {accuracy} {accuracy_with_label}\n\n'
                 print(output_format, end='')
