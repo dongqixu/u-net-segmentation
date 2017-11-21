@@ -185,8 +185,9 @@ if __name__ == '__main__':
 
     # Not heavy load of main memory
     from glob import glob
-    image_list = glob(pathname='{}/*.nii.gz'.format('../hvsmr/data'))
-    label_list = glob(pathname='{}/*.nii.gz'.format('../hvsmr/label'))
+    date_form = 'crop'
+    image_list = glob(pathname='{}/*.nii.gz'.format(f'../hvsmr/{date_form}/data'))
+    label_list = glob(pathname='{}/*.nii.gz'.format(f'../hvsmr/{date_form}/label'))
     image_list.sort()
     label_list.sort()
     print(image_list)
@@ -203,7 +204,7 @@ if __name__ == '__main__':
     #     print(np.amin(label_data_list[i]), np.amax(label_data_list[i]))
 
     # Testing batch
-    for i in range(100):
+    for i in range(10):
         start_time = time.time()
         image_batch, label_batch = get_image_and_label_batch(image_data_list, label_data_list, input_size=64,
                                                              batch_size=1, channel=1)

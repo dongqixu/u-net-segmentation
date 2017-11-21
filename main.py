@@ -12,7 +12,7 @@ def init_parameter(name):
     # dictionary
     parameter_dict = dict()
     # current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    parameter_dict['phase'] = "train"
+    parameter_dict['phase'] = 'train'
     parameter_dict['batch_size'] = 1
     parameter_dict['input_size'] = 64
     parameter_dict['input_channels'] = 1
@@ -21,12 +21,13 @@ def init_parameter(name):
     parameter_dict['learning_rate'] = 0.001
     parameter_dict['beta1'] = 0.5
     parameter_dict['epoch'] = 10000  # 100000 -> 10000
-    parameter_dict['train_data_dir'] = "../hvsmr/data/"
-    parameter_dict['test_data_dir'] = "../hvsmr/data/"
-    parameter_dict['label_data_dir'] = "../hvsmr/label"
-    parameter_dict['model_name'] = "hvsmr_" + name + ".model"
+    date_form = 'crop'
+    parameter_dict['train_data_dir'] = f'../hvsmr/{date_form}/data/'
+    parameter_dict['test_data_dir'] = f'../hvsmr/{date_form}/data/'
+    parameter_dict['label_data_dir'] = f'../hvsmr/{date_form}/label'
+    parameter_dict['model_name'] = f'hvsmr_{date_form}_{name}.model'
     parameter_dict['name_with_runtime'] = name
-    parameter_dict['checkpoint_dir'] = "checkpoint/"
+    parameter_dict['checkpoint_dir'] = 'checkpoint/'
     parameter_dict['resize_coefficient'] = 1.0
     parameter_dict['test_stride'] = 32  # for overlap
     # from previous version
