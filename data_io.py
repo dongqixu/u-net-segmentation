@@ -74,9 +74,10 @@ def get_image_and_label_batch(image_data_list, label_data_list, input_size, batc
         image_temp = None
         pass_flag = False
         while not pass_flag:
-            depth_select = np.random.randint(depth - input_size)
-            height_select = np.random.randint(height - input_size)
-            width_select = np.random.randint(width - input_size)
+            # random all possible selection
+            depth_select = np.random.randint(depth - input_size + 1)
+            height_select = np.random.randint(height - input_size + 1)
+            width_select = np.random.randint(width - input_size + 1)
 
             # cropping
             crop_position = np.array([depth_select, height_select, width_select])
@@ -86,11 +87,13 @@ def get_image_and_label_batch(image_data_list, label_data_list, input_size, batc
                          crop_position[2]:crop_position[2] + input_size
                          ]
             # 0,1,2,3,4 -> pass
+            # TODO: throw away part of defected training data?
             label_set = set(np.unique(label_temp))
-            if label_set == {0} and np.random.randint(1000) >= 5:
+            if label_set == {0} and np.random.randint(100) >= 25:
                 # print('*', end='')
                 continue
-            elif len(label_set) == 2 and np.random.randint(100) >= 5:
+            elif len(label_set) == 2 and np.random.randint(100) >= 50:
+                # print('!', end='')
                 continue
             else:
                 pass_flag = True
@@ -204,7 +207,7 @@ if __name__ == '__main__':
     #     print(np.amin(label_data_list[i]), np.amax(label_data_list[i]))
 
     # Testing batch
-    for i in range(10):
+    for i in range(1000):
         start_time = time.time()
         image_batch, label_batch = get_image_and_label_batch(image_data_list, label_data_list, input_size=64,
                                                              batch_size=1, channel=1)

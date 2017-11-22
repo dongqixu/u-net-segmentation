@@ -444,9 +444,21 @@ class Unet3D(object):
                     test_batch_size, ith_depth, ith_height, ith_width])
 
                 # TODO: boundary to be considered!
-                depth_range = np.arange(ith_depth - self.input_size, step=self.test_stride)
-                height_range = np.arange(ith_height - self.input_size, step=self.test_stride)
-                width_range = np.arange(ith_width - self.input_size, step=self.test_stride)
+                depth_range = np.arange(ith_depth - self.input_size + 1, step=self.test_stride)
+                height_range = np.arange(ith_height - self.input_size + 1, step=self.test_stride)
+                width_range = np.arange(ith_width - self.input_size + 1, step=self.test_stride)
+                print(depth_range, height_range, width_range)
+                # reverse order
+                depth_range_reverse = [ith_depth - reverse_depth - self.input_size for reverse_depth in depth_range]
+                height_range_reverse = [ith_height - reverse_height - self.input_size for reverse_height in height_range]
+                width_range_reverse = [ith_width - reverse_width - self.input_size for reverse_width in width_range]
+
+                depth_range = list(set(np.append(depth_range, depth_range_reverse)))
+                height_range = list(set(np.append(height_range, height_range_reverse)))
+                width_range = list(set(np.append(width_range, width_range_reverse)))
+                depth_range.sort()
+                height_range.sort()
+                width_range.sort()
                 print(depth_range, height_range, width_range)
 
                 for d in depth_range:
@@ -542,6 +554,7 @@ class Unet3D(object):
                     summation_ground = np.sum(_ground)
                     summation = summation_result + summation_ground + 1e-5
                     # union
+                    # TODO: use np.logical_and(_ground, _addition) -> faster
                     union = np.sum((_addition[:, :, :, :] > 0) * 1) + 1e-5
                     # appending
                     dice.append(2.0 * intersection / summation)
