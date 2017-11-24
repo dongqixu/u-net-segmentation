@@ -14,7 +14,7 @@ from loss_def import dice_loss_function, softmax_loss_function
 class Unet3D(object):
     def __init__(self, sess, parameter_dict):
         # member variables
-        self.dice_loss_coefficient = 0
+        self.dice_loss_coefficient = 0.1
         
         self.input_image = None
         self.input_ground_truth = None

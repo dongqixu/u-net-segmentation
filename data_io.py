@@ -89,7 +89,7 @@ def get_image_and_label_batch(image_data_list, label_data_list, input_size, batc
             # 0,1,2,3,4 -> pass
             # TODO: throw away part of defected training data?
             label_set = set(np.unique(label_temp))
-            if label_set == {0} and np.random.randint(100) >= 25:
+            if label_set == {0} and np.random.randint(100) >= 0:
                 # print('*', end='')
                 continue
             elif len(label_set) == 2 and np.random.randint(100) >= 50:
