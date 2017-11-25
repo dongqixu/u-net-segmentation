@@ -10,3 +10,11 @@ To Do List:
 6. *rewrite output format, separate train and test
 7. paper!
 8. model: feature number variant
+
+1.dice checking -> that is ok -> from senior
+2.data_analysis code -> plot
+3.**regularization -> check! AdamOptimizer
+4.**augmentation -> flipping and
+5.***dilated convolution
+6.cut out unnecessary ones?
+7.zero loss problem

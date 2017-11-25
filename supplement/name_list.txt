@@ -1,0 +1,65 @@
+<tf.Variable 'encoder1_1/encoder1_1_conv/kernel:0' shape=(3, 3, 3, 1, 16) dtype=float32_ref>
+<tf.Variable 'encoder1_1/encoder1_1_batch_norm/beta:0' shape=(16,) dtype=float32_ref>
+<tf.Variable 'encoder1_1/encoder1_1_batch_norm/gamma:0' shape=(16,) dtype=float32_ref>
+<tf.Variable 'encoder1_2/encoder1_2_conv/kernel:0' shape=(3, 3, 3, 16, 32) dtype=float32_ref>
+<tf.Variable 'encoder1_2/encoder1_2_batch_norm/beta:0' shape=(32,) dtype=float32_ref>
+<tf.Variable 'encoder1_2/encoder1_2_batch_norm/gamma:0' shape=(32,) dtype=float32_ref>
+<tf.Variable 'encoder2_1/encoder2_1_conv/kernel:0' shape=(3, 3, 3, 32, 32) dtype=float32_ref>
+<tf.Variable 'encoder2_1/encoder2_1_batch_norm/beta:0' shape=(32,) dtype=float32_ref>
+<tf.Variable 'encoder2_1/encoder2_1_batch_norm/gamma:0' shape=(32,) dtype=float32_ref>
+<tf.Variable 'encoder2_2/encoder2_2_conv/kernel:0' shape=(3, 3, 3, 32, 64) dtype=float32_ref>
+<tf.Variable 'encoder2_2/encoder2_2_batch_norm/beta:0' shape=(64,) dtype=float32_ref>
+<tf.Variable 'encoder2_2/encoder2_2_batch_norm/gamma:0' shape=(64,) dtype=float32_ref>
+<tf.Variable 'encoder3_1/encoder3_1_conv/kernel:0' shape=(3, 3, 3, 64, 64) dtype=float32_ref>
+<tf.Variable 'encoder3_1/encoder3_1_batch_norm/beta:0' shape=(64,) dtype=float32_ref>
+<tf.Variable 'encoder3_1/encoder3_1_batch_norm/gamma:0' shape=(64,) dtype=float32_ref>
+<tf.Variable 'encoder3_2/encoder3_2_conv/kernel:0' shape=(3, 3, 3, 64, 128) dtype=float32_ref>
+<tf.Variable 'encoder3_2/encoder3_2_batch_norm/beta:0' shape=(128,) dtype=float32_ref>
+<tf.Variable 'encoder3_2/encoder3_2_batch_norm/gamma:0' shape=(128,) dtype=float32_ref>
+<tf.Variable 'encoder4_1/encoder4_1_conv/kernel:0' shape=(3, 3, 3, 128, 128) dtype=float32_ref>
+<tf.Variable 'encoder4_1/encoder4_1_batch_norm/beta:0' shape=(128,) dtype=float32_ref>
+<tf.Variable 'encoder4_1/encoder4_1_batch_norm/gamma:0' shape=(128,) dtype=float32_ref>
+<tf.Variable 'encoder4_2/encoder4_2_conv/kernel:0' shape=(3, 3, 3, 128, 256) dtype=float32_ref>
+<tf.Variable 'encoder4_2/encoder4_2_batch_norm/beta:0' shape=(256,) dtype=float32_ref>
+<tf.Variable 'encoder4_2/encoder4_2_batch_norm/gamma:0' shape=(256,) dtype=float32_ref>
+<tf.Variable 'deconv3/deconv3_deconv/filter:0' shape=(4, 4, 4, 256, 256) dtype=float32_ref>
+<tf.Variable 'deconv3/deconv3_batch_norm/beta:0' shape=(256,) dtype=float32_ref>
+<tf.Variable 'deconv3/deconv3_batch_norm/gamma:0' shape=(256,) dtype=float32_ref>
+<tf.Variable 'decoder3_1/decoder3_1_conv/kernel:0' shape=(3, 3, 3, 384, 128) dtype=float32_ref>
+<tf.Variable 'decoder3_1/decoder3_1_batch_norm/beta:0' shape=(128,) dtype=float32_ref>
+<tf.Variable 'decoder3_1/decoder3_1_batch_norm/gamma:0' shape=(128,) dtype=float32_ref>
+<tf.Variable 'decoder3_2/decoder3_2_conv/kernel:0' shape=(3, 3, 3, 128, 128) dtype=float32_ref>
+<tf.Variable 'decoder3_2/decoder3_2_batch_norm/beta:0' shape=(128,) dtype=float32_ref>
+<tf.Variable 'decoder3_2/decoder3_2_batch_norm/gamma:0' shape=(128,) dtype=float32_ref>
+<tf.Variable 'deconv2/deconv2_deconv/filter:0' shape=(4, 4, 4, 128, 128) dtype=float32_ref>
+<tf.Variable 'deconv2/deconv2_batch_norm/beta:0' shape=(128,) dtype=float32_ref>
+<tf.Variable 'deconv2/deconv2_batch_norm/gamma:0' shape=(128,) dtype=float32_ref>
+<tf.Variable 'decoder2_1/decoder2_1_conv/kernel:0' shape=(3, 3, 3, 192, 64) dtype=float32_ref>
+<tf.Variable 'decoder2_1/decoder2_1_batch_norm/beta:0' shape=(64,) dtype=float32_ref>
+<tf.Variable 'decoder2_1/decoder2_1_batch_norm/gamma:0' shape=(64,) dtype=float32_ref>
+<tf.Variable 'decoder2_2/decoder2_2_conv/kernel:0' shape=(3, 3, 3, 64, 64) dtype=float32_ref>
+<tf.Variable 'decoder2_2/decoder2_2_batch_norm/beta:0' shape=(64,) dtype=float32_ref>
+<tf.Variable 'decoder2_2/decoder2_2_batch_norm/gamma:0' shape=(64,) dtype=float32_ref>
+<tf.Variable 'deconv1/deconv1_deconv/filter:0' shape=(4, 4, 4, 64, 64) dtype=float32_ref>
+<tf.Variable 'deconv1/deconv1_batch_norm/beta:0' shape=(64,) dtype=float32_ref>
+<tf.Variable 'deconv1/deconv1_batch_norm/gamma:0' shape=(64,) dtype=float32_ref>
+<tf.Variable 'decoder1_1/decoder1_1_conv/kernel:0' shape=(3, 3, 3, 96, 32) dtype=float32_ref>
+<tf.Variable 'decoder1_1/decoder1_1_batch_norm/beta:0' shape=(32,) dtype=float32_ref>
+<tf.Variable 'decoder1_1/decoder1_1_batch_norm/gamma:0' shape=(32,) dtype=float32_ref>
+<tf.Variable 'decoder1_2/decoder1_2_conv/kernel:0' shape=(3, 3, 3, 32, 32) dtype=float32_ref>
+<tf.Variable 'decoder1_2/decoder1_2_batch_norm/beta:0' shape=(32,) dtype=float32_ref>
+<tf.Variable 'decoder1_2/decoder1_2_batch_norm/gamma:0' shape=(32,) dtype=float32_ref>
+<tf.Variable 'predicted_prob/kernel:0' shape=(1, 1, 1, 32, 3) dtype=float32_ref>
+<tf.Variable 'predicted_prob/bias:0' shape=(3,) dtype=float32_ref>
+<tf.Variable 'auxiliary3_prob_8x/kernel:0' shape=(1, 1, 1, 256, 3) dtype=float32_ref>
+<tf.Variable 'auxiliary3_prob_8x/bias:0' shape=(3,) dtype=float32_ref>
+<tf.Variable 'auxiliary3_prob_4x/filter:0' shape=(4, 4, 4, 3, 3) dtype=float32_ref>
+<tf.Variable 'auxiliary3_prob_2x/filter:0' shape=(4, 4, 4, 3, 3) dtype=float32_ref>
+<tf.Variable 'auxiliary3_prob_1x/filter:0' shape=(4, 4, 4, 3, 3) dtype=float32_ref>
+<tf.Variable 'auxiliary2_prob_4x/kernel:0' shape=(1, 1, 1, 128, 3) dtype=float32_ref>
+<tf.Variable 'auxiliary2_prob_4x/bias:0' shape=(3,) dtype=float32_ref>
+<tf.Variable 'auxiliary2_prob_2x/filter:0' shape=(4, 4, 4, 3, 3) dtype=float32_ref>
+<tf.Variable 'auxiliary2_prob_1x/filter:0' shape=(4, 4, 4, 3, 3) dtype=float32_ref>
+<tf.Variable 'auxiliary1_prob_2x/kernel:0' shape=(1, 1, 1, 64, 3) dtype=float32_ref>
+<tf.Variable 'auxiliary1_prob_2x/bias:0' shape=(3,) dtype=float32_ref>
+<tf.Variable 'auxiliary1_prob_1x/filter:0' shape=(4, 4, 4, 3, 3) dtype=float32_ref>

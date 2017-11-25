@@ -5,7 +5,7 @@ import time
 from conv_def import conv_bn_relu, deconv_bn_relu, conv3d, deconv3d
 from data_io import load_image_and_label, get_image_and_label_batch
 from glob import glob
-from json_io import dict_to_json
+from json_io import dict_to_json, json_to_dict
 from loss_def import dice_loss_function, softmax_loss_function
 
 ''' 3D U-Net Model '''
@@ -15,6 +15,7 @@ class Unet3D(object):
     def __init__(self, sess, parameter_dict):
         # member variables
         self.dice_loss_coefficient = 0.1
+        self.l2_loss_coefficient = 0.001
         
         self.input_image = None
         self.input_ground_truth = None
@@ -39,6 +40,7 @@ class Unet3D(object):
         self.fine_tuning_variables = None
         self.saver = None
         self.saver_fine_tuning = None
+        self.l2_loss = None
 
         # predefined
         # single-gpu
@@ -216,8 +218,18 @@ class Unet3D(object):
             self.auxiliary2_weight_loss * 0.6 + \
             self.auxiliary3_weight_loss * 0.3
 
-        # deprecated: dice loss removed by zero coefficient
-        self.total_loss = self.total_dice_loss * self.dice_loss_coefficient + self.total_weight_loss
+        # regularization
+        _norm = 0
+        tensor_name_dict = json_to_dict('regularization.json', read_file=True)
+        for tensor_name in tensor_name_dict.values():
+            _tensor = tf.get_default_graph().get_tensor_by_name(tensor_name)
+            _norm += tf.nn.l2_loss(_tensor)
+        self.l2_loss = _norm
+
+        # total loss
+        self.total_loss = \
+            self.total_dice_loss * self.dice_loss_coefficient + self.total_weight_loss + \
+            self.l2_loss * self.l2_loss_coefficient
 
         # trainable variables
         self.trainable_variables = tf.trainable_variables()
@@ -334,8 +346,8 @@ class Unet3D(object):
                 '''The same data at this stage'''
 
                 # update network
-                _, train_loss, dice_loss, weight_loss = self.sess.run(
-                    [optimizer, self.total_loss, self.total_dice_loss, self.total_weight_loss],
+                _, train_loss, dice_loss, weight_loss, l2_loss = self.sess.run(
+                    [optimizer, self.total_loss, self.total_dice_loss, self.total_weight_loss, self.l2_loss],
                     feed_dict={self.input_image: train_data_batch,
                                self.input_ground_truth: train_label_batch})
                 '''Summary'''
@@ -367,9 +379,9 @@ class Unet3D(object):
                 # loss_log.write('%s %s\n' % (train_loss, val_loss))
                 # deprecated: remove validation loss, dice loss original
                 output_format = '[Epoch] %d, time: %4.4f, train_loss: %.8f \n' \
-                                '[Loss] dice_loss: %.8f, weight_loss: %.8f \n\n'\
+                                '[Loss] dice_loss: %.8f, weight_loss: %.8f, l2_loss: %.8f \n\n'\
                                 % (epoch+1, time.time() - start_time, train_loss,
-                                   dice_loss, weight_loss)
+                                   dice_loss, weight_loss, l2_loss)
                 loss_log.write(output_format)
                 print(output_format, end='')
                 if np.mod(epoch+1, self.save_interval) == 0:
@@ -504,8 +516,8 @@ class Unet3D(object):
                             test_prediction_batch = self.sess.run(self.predicted_label,
                                                                   feed_dict={self.input_image: test_data_batch})
                             # TODO: add loss described in the paper
-                            test_loss, dice_loss, weight_loss = self.sess.run(
-                                [self.total_loss, self.total_dice_loss, self.total_weight_loss],
+                            test_loss, dice_loss, weight_loss, l2_loss = self.sess.run(
+                                [self.total_loss, self.total_dice_loss, self.total_weight_loss, self.l2_loss],
                                 feed_dict={self.input_image: test_data_batch,
                                            self.input_ground_truth: test_label_batch})
 
@@ -526,10 +538,10 @@ class Unet3D(object):
                             # loss_log.write('%s %s\n' % (train_loss, val_loss))
                             output_format = '[DHW] %f, %f, %f\n' \
                                             '[Sample] %d, time: %4.4f, test_loss: %.8f \n' \
-                                            '[Loss] dice_loss: %.8f, weight_loss: %.8f \n\n' \
+                                            '[Loss] dice_loss: %.8f, weight_loss: %.8f, l2_loss: %.8f \n\n' \
                                             % (d/depth_range[-1], h/height_range[-1], w/width_range[-1],
                                                ith_sample, time.time() - batch_start_time, test_loss,
-                                               dice_loss, weight_loss)
+                                               dice_loss, weight_loss, l2_loss)
                             test_log.write(output_format)
                             # print(output_format, end='')
 
