@@ -15,7 +15,7 @@ class Unet3D(object):
     def __init__(self, sess, parameter_dict):
         # member variables
         self.dice_loss_coefficient = 0.1
-        self.l2_loss_coefficient = 0.001
+        self.l2_loss_coefficient = 0.0005
         
         self.input_image = None
         self.input_ground_truth = None

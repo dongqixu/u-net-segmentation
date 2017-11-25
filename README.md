@@ -11,10 +11,10 @@ To Do List:
 7. paper!
 8. model: feature number variant
 
-1.dice checking -> that is ok -> from senior
-2.data_analysis code -> plot
-3.**regularization -> check! AdamOptimizer
-4.**augmentation -> flipping and
-5.***dilated convolution
-6.cut out unnecessary ones?
-7.zero loss problem
+1. dice: without softmax
+2. argumentation: rotation and flipping
+3. regularization: AdamOptimizer
+4. loss weight: zero loss problem? pure label in?*
+5. **data_analysis code -> plot
+6. **dilated convolution
+7. cut out unnecessary ones of testing?*
