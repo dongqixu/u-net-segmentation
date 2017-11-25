@@ -3,6 +3,7 @@ import nibabel as nib
 import numpy as np
 import sys
 import time
+from scipy.ndimage import rotate
 from skimage.transform import resize
 
 ''' Data loading and IO '''
@@ -110,7 +111,7 @@ def get_image_and_label_batch(image_data_list, label_data_list, input_size, batc
 
         '''Necessary? Zero problem may happen'''
         # Already perform normalization over the whole dataset
-        image_normalization = image_temp
+        # image_normalization = image_temp
         '''
         image_temp = image_temp / 255.0  # what is the range?
         mean_temp = np.mean(image_temp)
@@ -119,17 +120,28 @@ def get_image_and_label_batch(image_data_list, label_data_list, input_size, batc
         image_normalization = (image_temp - mean_temp) / (deviation_temp + 1e-5)
         '''
 
-        # data augmentation with rotation
-        # TODO: data augmentation
-        if rotation_flag and np.random.random() > 0.65:
-            print('Rotation batch...')
-            '''Further improvement on rotation'''
-        if flip_flag and np.random.random() > 0.65:
-            print('Flipping batch...')
-            '''Further improvement on flipping'''
+        # data augmentation with rotation and flipping
+        if np.random.random() > 0.5:
+            if np.random.random() > 0.5:
+                if rotation_flag:
+                    # print('Rotating batch...')
+                    rotate_angle_list = [90, 180, 270]
+                    axes_list = [(0, 1), (0, 2), (1, 2)]
+                    _i = np.random.randint(3)
+                    _j = np.random.randint(3)
+                    _angle = rotate_angle_list[_i]
+                    _axes = axes_list[_j]
+                    image_temp = rotate(input=image_temp, angle=_angle, axes=_axes, reshape=False, order=1)
+                    label_temp = rotate(input=label_temp, angle=_angle, axes=_axes, reshape=False, order=0)
+            else:
+                if flip_flag:
+                    # print('Flipping batch...')
+                    _axis = np.random.randint(3)
+                    image_temp = np.flip(image_temp, axis=_axis)
+                    label_temp = np.flip(label_temp, axis=_axis)
 
         # NDHWC
-        image_batch[ith_batch, :, :, :, channel-1] = image_normalization
+        image_batch[ith_batch, :, :, :, channel-1] = image_temp
         label_batch[ith_batch, :, :, :] = label_temp
 
     return image_batch, label_batch
@@ -210,7 +222,8 @@ if __name__ == '__main__':
     for i in range(1000):
         start_time = time.time()
         image_batch, label_batch = get_image_and_label_batch(image_data_list, label_data_list, input_size=64,
-                                                             batch_size=1, channel=1)
+                                                             batch_size=1, channel=1, rotation_flag=True,
+                                                             flip_flag=True)
         # print(f'Loading time: {time.time() - start_time}')
         # print('data: ', end='')
         # print(image_batch.shape)

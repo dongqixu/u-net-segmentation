@@ -61,6 +61,7 @@ class Unet3D(object):
         self.train_data_dir = parameter_dict['train_data_dir']
         self.test_data_dir = parameter_dict['test_data_dir']
         self.label_data_dir = parameter_dict['label_data_dir']
+        self.prediction_dir = parameter_dict['prediction_dir']
         self.model_name = parameter_dict['model_name']
         self.name_with_runtime = parameter_dict['name_with_runtime']
         self.checkpoint_dir = parameter_dict['checkpoint_dir']
@@ -326,7 +327,8 @@ class Unet3D(object):
 
                 # load batch
                 train_data_batch, train_label_batch = get_image_and_label_batch(
-                    image_data_list, label_data_list, self.input_size, self.batch_size)
+                    image_data_list, label_data_list, self.input_size, self.batch_size,
+                    rotation_flag=True, flip_flag=True)
                 # val_data_batch, val_label_batch = get_image_and_label_batch(
                 #     image_data_list, label_data_list, self.input_size, self.batch_size)
                 '''The same data at this stage'''
@@ -536,6 +538,10 @@ class Unet3D(object):
                 if final_test_prediction_full.shape != test_label_full.shape:
                     print('Dimension mismatch of labels!')
                     exit(1)
+                # voting finished -> labels
+                if not os.path.exists(self.prediction_dir):
+                    os.makedirs(self.prediction_dir)
+                # TODO: store the prediction label
 
                 '''Revise the name of dice calculation'''
                 # Dice and Jaccard

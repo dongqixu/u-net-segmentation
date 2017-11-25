@@ -24,7 +24,8 @@ def init_parameter(name):
     date_form = 'crop'
     parameter_dict['train_data_dir'] = f'../hvsmr/{date_form}/data/'
     parameter_dict['test_data_dir'] = f'../hvsmr/{date_form}/data/'
-    parameter_dict['label_data_dir'] = f'../hvsmr/{date_form}/label'
+    parameter_dict['label_data_dir'] = f'../hvsmr/{date_form}/label/'
+    parameter_dict['prediction_dir'] = f'../hvsmr/{date_form}/prediction/'
     parameter_dict['model_name'] = f'hvsmr_{date_form}_{name}.model'
     parameter_dict['name_with_runtime'] = name
     parameter_dict['checkpoint_dir'] = 'checkpoint/'
