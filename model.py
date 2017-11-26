@@ -2,7 +2,7 @@ import os
 import numpy as np
 import tensorflow as tf
 import time
-from conv_def import conv_bn_relu, deconv_bn_relu, conv3d, deconv3d
+from conv_def import conv_bn_relu, deconv_bn_relu, conv3d, deconv3d, residual_block
 from data_io import load_image_and_label, get_image_and_label_batch
 from glob import glob
 from json_io import dict_to_json, json_to_dict
@@ -184,6 +184,107 @@ class Unet3D(object):
             predicted_label = tf.argmax(input=softmax_prob, axis=4, name='predicted_label')
 
         return predicted_prob, predicted_label, auxiliary1_prob_1x, auxiliary2_prob_1x, auxiliary3_prob_1x
+
+    def dilated_resnet_model(self, inputs):
+        is_training = (self.phase == 'train')
+        # concat_dimension = 4  # channels_last
+
+        # device: gpu0
+        with tf.device(device_name_or_function=self.device[0]):
+            # level 1
+            conv_1 = conv3d(inputs=inputs, output_channels=self.feat_num, kernel_size=7, stride=1,
+                            padding='same', use_bias=False, name='level_1_1', dilation=1)
+
+            res_1 = residual_block(inputs=conv_1, output_channels=self.feat_num, kernel_size=3, stride=1,
+                                   is_training=is_training, name='level_1_2',
+                                   padding='same', use_bias=False, dilation=1)
+            # level 2
+            res_2 = residual_block(inputs=res_1, output_channels=self.feat_num*2, kernel_size=3, stride=1,
+                                   is_training=is_training, name='level_2',
+                                   padding='same', use_bias=False, dilation=1)
+            # level 3
+            res_3_1 = residual_block(inputs=res_2, output_channels=self.feat_num*4, kernel_size=3, stride=1,
+                                     is_training=is_training, name='level_3_1',
+                                     padding='same', use_bias=False, dilation=1)
+            res_3_2 = residual_block(inputs=res_3_1, output_channels=self.feat_num*4, kernel_size=3, stride=1,
+                                     is_training=is_training, name='level_3_2',
+                                     padding='same', use_bias=False, dilation=1)
+            # level 4
+            res_4_1 = residual_block(inputs=res_3_2, output_channels=self.feat_num*8, kernel_size=3, stride=1,
+                                     is_training=is_training, name='level_4_1',
+                                     padding='same', use_bias=False, dilation=1)
+            res_4_2 = residual_block(inputs=res_4_1, output_channels=self.feat_num*8, kernel_size=3, stride=1,
+                                     is_training=is_training, name='level_4_2',
+                                     padding='same', use_bias=False, dilation=1)
+            # level 5
+            res_5_1 = residual_block(inputs=res_4_2, output_channels=self.feat_num*16, kernel_size=3, stride=1,
+                                     is_training=is_training, name='level_5_1',
+                                     padding='same', use_bias=False, dilation=2)
+            res_5_2 = residual_block(inputs=res_5_1, output_channels=self.feat_num*16, kernel_size=3, stride=1,
+                                     is_training=is_training, name='level_5_2',
+                                     padding='same', use_bias=False, dilation=2)
+
+        with tf.device(device_name_or_function=self.device[1]):
+            # level 6
+            res_6_1 = residual_block(inputs=res_5_2, output_channels=self.feat_num*32, kernel_size=3, stride=1,
+                                     is_training=is_training, name='level_6_1',
+                                     padding='same', use_bias=False, dilation=4)
+            res_6_2 = residual_block(inputs=res_6_1, output_channels=self.feat_num*32, kernel_size=3, stride=1,
+                                     is_training=is_training, name='level_6_2',
+                                     padding='same', use_bias=False, dilation=4)
+            # level 7
+            res_7 = residual_block(inputs=res_6_2, output_channels=self.feat_num*32, kernel_size=3, stride=1,
+                                   is_training=is_training, name='level_7',
+                                   padding='same', use_bias=False, dilation=2, residual=False)
+            # level 8
+            res_8 = residual_block(inputs=res_7, output_channels=self.feat_num*32, kernel_size=3, stride=1,
+                                   is_training=is_training, name='level_8',
+                                   padding='same', use_bias=False, dilation=1, residual=False)
+            '''
+            pool1 = tf.layers.max_pooling3d(
+                inputs=encoder1_2,
+                pool_size=2,                    # pool_depth, pool_height, pool_width
+                strides=2,
+                padding='valid',                # No padding, default
+                data_format='channels_last',    # default
+                name='pool1'
+            )
+            '''
+            feature = res_8
+            # predicted probability
+            predicted_prob = conv3d(inputs=feature, output_channels=self.output_channels, kernel_size=1,
+                                    stride=1, use_bias=True, name='predicted_prob')
+            '''auxiliary prediction'''
+            '''
+            # forth level
+            auxiliary3_prob_8x = conv3d(inputs=encoder4_2, output_channels=self.output_channels, kernel_size=1,
+                                        stride=1, use_bias=True, name='auxiliary3_prob_8x')
+            auxiliary3_prob_4x = deconv3d(inputs=auxiliary3_prob_8x, output_channels=self.output_channels,
+                                          name='auxiliary3_prob_4x')
+            auxiliary3_prob_2x = deconv3d(inputs=auxiliary3_prob_4x, output_channels=self.output_channels,
+                                          name='auxiliary3_prob_2x')
+            auxiliary3_prob_1x = deconv3d(inputs=auxiliary3_prob_2x, output_channels=self.output_channels,
+                                          name='auxiliary3_prob_1x')
+            # third level
+            auxiliary2_prob_4x = conv3d(inputs=decoder3_2, output_channels=self.output_channels, kernel_size=1,
+                                        stride=1, use_bias=True, name='auxiliary2_prob_4x')
+            auxiliary2_prob_2x = deconv3d(inputs=auxiliary2_prob_4x, output_channels=self.output_channels,
+                                          name='auxiliary2_prob_2x')
+            auxiliary2_prob_1x = deconv3d(inputs=auxiliary2_prob_2x, output_channels=self.output_channels,
+                                          name='auxiliary2_prob_1x')
+            # second level
+            auxiliary1_prob_2x = conv3d(inputs=decoder2_2, output_channels=self.output_channels, kernel_size=1,
+                                        stride=1, use_bias=True, name='auxiliary1_prob_2x')
+            auxiliary1_prob_1x = deconv3d(inputs=auxiliary1_prob_2x, output_channels=self.output_channels,
+                                          name='auxiliary1_prob_1x')
+            '''
+
+        # device: cpu0
+        with tf.device(device_name_or_function=self.device[2]):
+            softmax_prob = tf.nn.softmax(logits=predicted_prob, name='softmax_prob')
+            predicted_label = tf.argmax(input=softmax_prob, axis=4, name='predicted_label')
+
+        return predicted_prob, predicted_label
 
     def build_model(self):
         # input data and labels

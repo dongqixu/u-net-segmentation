@@ -55,7 +55,7 @@ def main(_):
     if args.gpu:
         gpu = args.gpu
     else:
-        gpu = '0,1'
+        gpu = '0'
 
     # set cuda visible device
     os.environ["CUDA_VISIBLE_DEVICES"] = gpu

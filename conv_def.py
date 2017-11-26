@@ -136,23 +136,26 @@ def conv_bn_relu_x3(inputs, output_channels, kernel_size, stride, is_training, n
 
 # dilated convolution
 def residual_block(inputs, output_channels, kernel_size, stride, is_training, name,
-                   padding='same', use_bias=False, dilation=1):
+                   padding='same', use_bias=False, dilation=1, residual=True):
     with tf.variable_scope(name_or_scope=name):
         # first block
         conv_0 = conv3d(inputs, output_channels, kernel_size, stride, padding=padding,
-                        use_bias=use_bias, name=name+'_conv_0', dilation=dilation)
+                        use_bias=use_bias, name=name+'_conv_a', dilation=dilation)
         bn_0 = tf.contrib.layers.batch_norm(inputs=conv_0, decay=0.9, scale=True, epsilon=1e-5,
                                             updates_collections=None, is_training=is_training,
-                                            scope=name + '_batch_norm_0')
-        relu_0 = tf.nn.relu(features=bn_0, name=name + '_relu_0')
+                                            scope=name + '_batch_norm_a')
+        relu_0 = tf.nn.relu(features=bn_0, name=name + '_relu_a')
         # second block
         conv_1 = conv3d(relu_0, output_channels, kernel_size, stride, padding=padding,
-                        use_bias=use_bias, name=name + '_conv_1', dilation=dilation)
+                        use_bias=use_bias, name=name + '_conv_b', dilation=dilation)
         bn_1 = tf.contrib.layers.batch_norm(inputs=conv_1, decay=0.9, scale=True, epsilon=1e-5,
                                             updates_collections=None, is_training=is_training,
-                                            scope=name + '_batch_norm_1')
-        '''residual block'''
+                                            scope=name + '_batch_norm_b')
         # TODO: when is better?
-        res = bn_1 + inputs
-        relu_1 = tf.nn.relu(features=res, name=name + '_relu_1')
+        '''residual block'''
+        if residual:
+            res = bn_1 + inputs
+        else:
+            res = bn_1
+        relu_1 = tf.nn.relu(features=res, name=name + '_relu_b')
         return relu_1
