@@ -7,6 +7,7 @@ from data_io import load_image_and_label, get_image_and_label_batch
 from glob import glob
 from json_io import dict_to_json, json_to_dict
 from loss_def import dice_loss_function, softmax_loss_function
+from supplement.get_regularization_tensor import extract_tensor_name
 
 ''' 3D U-Net Model '''
 
@@ -81,8 +82,8 @@ class Unet3D(object):
         self.cube_overlapping_factor = parameter_dict['cube_overlapping_factor']
 
         # build model
-        # self.build_dilated_resnet_model()
-        self.build_unet_model()
+        self.build_dilated_resnet_model()
+        # self.build_unet_model()
 
     def unet_model(self, inputs):
         is_training = (self.phase == 'train')
@@ -217,6 +218,7 @@ class Unet3D(object):
             res_4_2 = residual_block(inputs=res_4_1, output_channels=self.feat_num*8, kernel_size=3, stride=1,
                                      is_training=is_training, name='level_4_2',
                                      padding='same', use_bias=False, dilation=1)
+        with tf.device(device_name_or_function=self.device[1]):
             # level 5
             res_5_1 = residual_block(inputs=res_4_2, output_channels=self.feat_num*16, kernel_size=3, stride=1,
                                      is_training=is_training, name='level_5_1',
@@ -224,21 +226,19 @@ class Unet3D(object):
             res_5_2 = residual_block(inputs=res_5_1, output_channels=self.feat_num*16, kernel_size=3, stride=1,
                                      is_training=is_training, name='level_5_2',
                                      padding='same', use_bias=False, dilation=2)
-
-        with tf.device(device_name_or_function=self.device[1]):
             # level 6
-            res_6_1 = residual_block(inputs=res_5_2, output_channels=self.feat_num*32, kernel_size=3, stride=1,
+            res_6_1 = residual_block(inputs=res_5_2, output_channels=self.feat_num*8, kernel_size=3, stride=1,
                                      is_training=is_training, name='level_6_1',
                                      padding='same', use_bias=False, dilation=4)
-            res_6_2 = residual_block(inputs=res_6_1, output_channels=self.feat_num*32, kernel_size=3, stride=1,
+            res_6_2 = residual_block(inputs=res_6_1, output_channels=self.feat_num*8, kernel_size=3, stride=1,
                                      is_training=is_training, name='level_6_2',
                                      padding='same', use_bias=False, dilation=4)
             # level 7
-            res_7 = residual_block(inputs=res_6_2, output_channels=self.feat_num*32, kernel_size=3, stride=1,
+            res_7 = residual_block(inputs=res_6_2, output_channels=self.feat_num*4, kernel_size=3, stride=1,
                                    is_training=is_training, name='level_7',
                                    padding='same', use_bias=False, dilation=2, residual=False)
             # level 8
-            res_8 = residual_block(inputs=res_7, output_channels=self.feat_num*32, kernel_size=3, stride=1,
+            res_8 = residual_block(inputs=res_7, output_channels=self.feat_num*4, kernel_size=3, stride=1,
                                    is_training=is_training, name='level_8',
                                    padding='same', use_bias=False, dilation=1, residual=False)
             '''
@@ -322,7 +322,7 @@ class Unet3D(object):
 
         # regularization
         _norm = 0
-        tensor_name_dict = json_to_dict('regularization.json', read_file=True)
+        tensor_name_dict = json_to_dict('regularization_unet.json', read_file=True)
         for tensor_name in tensor_name_dict.values():
             _tensor = tf.get_default_graph().get_tensor_by_name(tensor_name)
             _norm += tf.nn.l2_loss(_tensor)
@@ -377,27 +377,31 @@ class Unet3D(object):
 
         # dice loss
         self.main_dice_loss = dice_loss_function(self.predicted_prob, self.input_ground_truth)
-        self.total_dice_loss = self.main_dice_loss
+        self.total_dice_loss = self.main_dice_loss * 2.4
 
         # class-weighted cross-entropy loss
         self.main_weight_loss = softmax_loss_function(self.predicted_prob, self.input_ground_truth)
-        self.total_weight_loss = self.main_weight_loss
+        self.total_weight_loss = self.main_weight_loss * 2.8
 
-        '''
+        # runtime update json file
+        with open('supplement/name_list.txt', 'w') as name_list:
+            for var in tf.trainable_variables():
+                name_list.write(f'{var}\n')
+        extract_tensor_name(file_read='supplement/name_list.txt',
+                            file_write='regularization_dilated.json')
+
         # regularization
         _norm = 0
-        tensor_name_dict = json_to_dict('regularization.json', read_file=True)
+        tensor_name_dict = json_to_dict('regularization_dilated.json', read_file=True)
         for tensor_name in tensor_name_dict.values():
             _tensor = tf.get_default_graph().get_tensor_by_name(tensor_name)
             _norm += tf.nn.l2_loss(_tensor)
         self.l2_loss = _norm
-        '''
-        self.l2_loss = 0
 
         # total loss
         self.total_loss = \
-            self.total_dice_loss * self.dice_loss_coefficient + self.total_weight_loss
-        # self.l2_loss * self.l2_loss_coefficient
+            self.total_dice_loss * self.dice_loss_coefficient + self.total_weight_loss + \
+            self.l2_loss * self.l2_loss_coefficient
 
         # trainable variables
         self.trainable_variables = tf.trainable_variables()
