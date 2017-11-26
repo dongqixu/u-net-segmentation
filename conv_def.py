@@ -17,7 +17,7 @@ def conv3d(inputs, output_channels, kernel_size, stride, padding='same', use_bia
         data_format='channels_last',    # channels_last (batch, depth, height, width, channels)
                                         # channels_first (batch, channels, depth, height, width)
         dilation_rate=(dilation, dilation, dilation),
-                                        # incompatible problem with stride value != 1
+        # incompatible problem with stride value != 1
         activation=None,                # None to maintain a linear activation
         use_bias=use_bias,
         kernel_initializer=tf.truncated_normal_initializer(mean=0.0, stddev=0.01),
@@ -154,7 +154,13 @@ def residual_block(inputs, output_channels, kernel_size, stride, is_training, na
         # TODO: when is better?
         '''residual block'''
         if residual:
-            res = bn_1 + inputs
+            if bn_1.shape != inputs.shape:
+                # tensor shape mismatch problem
+                extension = conv3d(inputs, output_channels, kernel_size=1, stride=1, padding='same',
+                                   use_bias=True, name=name + '_residual', dilation=1)
+                res = bn_1 + extension
+            else:
+                res = bn_1 + inputs
         else:
             res = bn_1
         relu_1 = tf.nn.relu(features=res, name=name + '_relu_b')

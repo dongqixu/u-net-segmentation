@@ -81,7 +81,8 @@ class Unet3D(object):
         self.cube_overlapping_factor = parameter_dict['cube_overlapping_factor']
 
         # build model
-        self.build_model()
+        # self.build_dilated_resnet_model()
+        self.build_unet_model()
 
     def unet_model(self, inputs):
         is_training = (self.phase == 'train')
@@ -286,7 +287,7 @@ class Unet3D(object):
 
         return predicted_prob, predicted_label
 
-    def build_model(self):
+    def build_unet_model(self):
         # input data and labels
         self.input_image = tf.placeholder(dtype=tf.float32,
                                           shape=[self.batch_size, self.input_size, self.input_size,
@@ -361,7 +362,50 @@ class Unet3D(object):
         self.saver_fine_tuning = tf.train.Saver(self.fine_tuning_variables)
         # The Saver class adds ops to save and restore variables to and from checkpoints.
         # It also provides convenience methods to run these ops.
-        print('Model built successfully.')
+        print('UNet Model built successfully.')
+
+    def build_dilated_resnet_model(self):
+        # input data and labels
+        self.input_image = tf.placeholder(dtype=tf.float32,
+                                          shape=[self.batch_size, self.input_size, self.input_size,
+                                                 self.input_size, self.input_channels], name='input_image')
+        self.input_ground_truth = tf.placeholder(dtype=tf.int32, shape=[self.batch_size, self.input_size,
+                                                                        self.input_size, self.input_size],
+                                                 name='input_ground_truth')
+        # probability
+        self.predicted_prob, self.predicted_label = self.dilated_resnet_model(self.input_image)
+
+        # dice loss
+        self.main_dice_loss = dice_loss_function(self.predicted_prob, self.input_ground_truth)
+        self.total_dice_loss = self.main_dice_loss
+
+        # class-weighted cross-entropy loss
+        self.main_weight_loss = softmax_loss_function(self.predicted_prob, self.input_ground_truth)
+        self.total_weight_loss = self.main_weight_loss
+
+        '''
+        # regularization
+        _norm = 0
+        tensor_name_dict = json_to_dict('regularization.json', read_file=True)
+        for tensor_name in tensor_name_dict.values():
+            _tensor = tf.get_default_graph().get_tensor_by_name(tensor_name)
+            _norm += tf.nn.l2_loss(_tensor)
+        self.l2_loss = _norm
+        '''
+        self.l2_loss = 0
+
+        # total loss
+        self.total_loss = \
+            self.total_dice_loss * self.dice_loss_coefficient + self.total_weight_loss
+        # self.l2_loss * self.l2_loss_coefficient
+
+        # trainable variables
+        self.trainable_variables = tf.trainable_variables()
+
+        self.saver = tf.train.Saver(max_to_keep=20)
+        # The Saver class adds ops to save and restore variables to and from checkpoints.
+        # It also provides convenience methods to run these ops.
+        print('Dilated ResNet Model built successfully.')
 
     def save_checkpoint(self, checkpoint_dir, model_name, global_step):
         model_dir = '%s_%s_%s_s%s-%s' % (self.feat_num, self.batch_size, self.output_size,
