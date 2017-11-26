@@ -8,12 +8,12 @@ def dice_loss_function(prediction, ground_truth):
     # TODO: any influence on softmax?
     # prediction = tf.nn.softmax(logits=prediction)
     ground_truth = tf.one_hot(indices=ground_truth, depth=3)
-    # weight
-    weight_list = []
-    for i in range(3):
-        num = tf.reduce_sum(ground_truth[:, :, :, :, i]) / tf.reduce_sum(ground_truth)
-        weight_list.append(num)
-    weight = get_weight_list(weight_list)
+    # # weight
+    # weight_list = []
+    # for i in range(3):
+    #     num = tf.reduce_sum(ground_truth[:, :, :, :, i]) / tf.reduce_sum(ground_truth)
+    #     weight_list.append(num)
+    # weight = get_weight_list(weight_list)
     dice_loss = 0
     for i in range(3):
         # reduce_mean calculation -> reduce_sum
@@ -22,8 +22,8 @@ def dice_loss_function(prediction, ground_truth):
         union_ground_truth = tf.reduce_sum(ground_truth[:, :, :, :, i] * ground_truth[:, :, :, :, i])
         union = union_ground_truth + union_prediction
         # weight should sum to 1 -> sum as 2 -> OK
-        # weight = 1 - (tf.reduce_sum(ground_truth[:, :, :, :, i]) / tf.reduce_sum(ground_truth))
-        dice_loss += (1 - 2 * intersection / union) * weight[i]
+        weight = 1 - (tf.reduce_sum(ground_truth[:, :, :, :, i]) / tf.reduce_sum(ground_truth))
+        dice_loss += (1 - 2 * intersection / union) * weight
     return dice_loss
 
 
