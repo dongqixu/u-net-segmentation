@@ -7,7 +7,7 @@ import tensorflow.contrib.slim as slim
 
 
 # 3D convolution
-def conv3d(inputs, output_channels, kernel_size, stride, padding='same', use_bias=False, name='conv'):
+def conv3d(inputs, output_channels, kernel_size, stride, padding='same', use_bias=False, name='conv', dilation=1):
     tensor = tf.layers.conv3d(
         inputs=inputs,                  # Tensor input
         filters=output_channels,        # Integer, the dimensionality of the output space
@@ -16,7 +16,8 @@ def conv3d(inputs, output_channels, kernel_size, stride, padding='same', use_bia
         padding=padding,                # "valid" or "same", same: zero padding
         data_format='channels_last',    # channels_last (batch, depth, height, width, channels)
                                         # channels_first (batch, channels, depth, height, width)
-        dilation_rate=(1, 1, 1),        # incompatible problem with stride value != 1
+        dilation_rate=(dilation, dilation, dilation),
+                                        # incompatible problem with stride value != 1
         activation=None,                # None to maintain a linear activation
         use_bias=use_bias,
         kernel_initializer=tf.truncated_normal_initializer(mean=0.0, stddev=0.01),
@@ -131,3 +132,27 @@ def conv_bn_relu_x3(inputs, output_channels, kernel_size, stride, is_training, n
                              padding=padding, use_bias=use_bias)
     return z+z_out
     # input -> z -> z_out -> z_out + z
+
+
+# dilated convolution
+def residual_block(inputs, output_channels, kernel_size, stride, is_training, name,
+                   padding='same', use_bias=False, dilation=1):
+    with tf.variable_scope(name_or_scope=name):
+        # first block
+        conv_0 = conv3d(inputs, output_channels, kernel_size, stride, padding=padding,
+                        use_bias=use_bias, name=name+'_conv_0', dilation=dilation)
+        bn_0 = tf.contrib.layers.batch_norm(inputs=conv_0, decay=0.9, scale=True, epsilon=1e-5,
+                                            updates_collections=None, is_training=is_training,
+                                            scope=name + '_batch_norm_0')
+        relu_0 = tf.nn.relu(features=bn_0, name=name + '_relu_0')
+        # second block
+        conv_1 = conv3d(relu_0, output_channels, kernel_size, stride, padding=padding,
+                        use_bias=use_bias, name=name + '_conv_1', dilation=dilation)
+        bn_1 = tf.contrib.layers.batch_norm(inputs=conv_1, decay=0.9, scale=True, epsilon=1e-5,
+                                            updates_collections=None, is_training=is_training,
+                                            scope=name + '_batch_norm_1')
+        '''residual block'''
+        # TODO: when is better?
+        res = bn_1 + inputs
+        relu_1 = tf.nn.relu(features=res, name=name + '_relu_1')
+        return relu_1
