@@ -4,10 +4,10 @@ import tensorflow as tf
 import time
 from conv_def import conv_bn_relu, deconv_bn_relu, conv3d, deconv3d, residual_block
 from data_io import load_image_and_label, get_image_and_label_batch
+from extract_kernel import extract_kernel_name
 from glob import glob
 from json_io import dict_to_json, json_to_dict
 from loss_def import dice_loss_function, softmax_loss_function
-from supplement.get_regularization_tensor import extract_tensor_name
 
 ''' 3D U-Net Model '''
 
@@ -193,99 +193,53 @@ class Unet3D(object):
 
         # device: gpu0
         with tf.device(device_name_or_function=self.device[0]):
-            # level 1
-            conv_1 = conv3d(inputs=inputs, output_channels=self.feat_num, kernel_size=7, stride=1,
-                            padding='same', use_bias=False, name='level_1_1', dilation=1)
+            res_1 = residual_block(inputs=inputs, output_channels=self.feat_num, kernel_size=3, stride=1,
+                                   is_training=is_training, name='res_1',
+                                   padding='same', use_bias=False, dilation=1)
+            res_2 = residual_block(inputs=res_1, output_channels=self.feat_num * 2, kernel_size=3, stride=1,
+                                   is_training=is_training, name='res_2',
+                                   padding='same', use_bias=False, dilation=2)
+            res_3 = residual_block(inputs=res_2, output_channels=self.feat_num * 4, kernel_size=3, stride=1,
+                                   is_training=is_training, name='res_3',
+                                   padding='same', use_bias=False, dilation=4)
+            res_4 = residual_block(inputs=res_3, output_channels=self.feat_num * 8, kernel_size=3, stride=1,
+                                   is_training=is_training, name='res_4',
+                                   padding='same', use_bias=False, dilation=8)
 
-            res_1 = residual_block(inputs=conv_1, output_channels=self.feat_num, kernel_size=3, stride=1,
-                                   is_training=is_training, name='level_1_2',
-                                   padding='same', use_bias=False, dilation=1)
-            # level 2
-            res_2 = residual_block(inputs=res_1, output_channels=self.feat_num*2, kernel_size=3, stride=1,
-                                   is_training=is_training, name='level_2',
-                                   padding='same', use_bias=False, dilation=1)
-            # level 3
-            res_3_1 = residual_block(inputs=res_2, output_channels=self.feat_num*4, kernel_size=3, stride=1,
-                                     is_training=is_training, name='level_3_1',
-                                     padding='same', use_bias=False, dilation=1)
-            res_3_2 = residual_block(inputs=res_3_1, output_channels=self.feat_num*4, kernel_size=3, stride=1,
-                                     is_training=is_training, name='level_3_2',
-                                     padding='same', use_bias=False, dilation=1)
-            # level 4
-            res_4_1 = residual_block(inputs=res_3_2, output_channels=self.feat_num*8, kernel_size=3, stride=1,
-                                     is_training=is_training, name='level_4_1',
-                                     padding='same', use_bias=False, dilation=1)
-            res_4_2 = residual_block(inputs=res_4_1, output_channels=self.feat_num*8, kernel_size=3, stride=1,
-                                     is_training=is_training, name='level_4_2',
-                                     padding='same', use_bias=False, dilation=1)
         with tf.device(device_name_or_function=self.device[1]):
-            # level 5
-            res_5_1 = residual_block(inputs=res_4_2, output_channels=self.feat_num*16, kernel_size=3, stride=1,
-                                     is_training=is_training, name='level_5_1',
-                                     padding='same', use_bias=False, dilation=2)
-            res_5_2 = residual_block(inputs=res_5_1, output_channels=self.feat_num*16, kernel_size=3, stride=1,
-                                     is_training=is_training, name='level_5_2',
-                                     padding='same', use_bias=False, dilation=2)
-            # level 6
-            res_6_1 = residual_block(inputs=res_5_2, output_channels=self.feat_num*8, kernel_size=3, stride=1,
-                                     is_training=is_training, name='level_6_1',
-                                     padding='same', use_bias=False, dilation=4)
-            res_6_2 = residual_block(inputs=res_6_1, output_channels=self.feat_num*8, kernel_size=3, stride=1,
-                                     is_training=is_training, name='level_6_2',
-                                     padding='same', use_bias=False, dilation=4)
-            # level 7
-            res_7 = residual_block(inputs=res_6_2, output_channels=self.feat_num*4, kernel_size=3, stride=1,
-                                   is_training=is_training, name='level_7',
+            res_5 = residual_block(inputs=res_4, output_channels=self.feat_num * 16, kernel_size=3, stride=1,
+                                   is_training=is_training, name='res_5',
+                                   padding='same', use_bias=False, dilation=16)
+            res_6 = residual_block(inputs=res_5, output_channels=self.feat_num * 8, kernel_size=3, stride=1,
+                                   is_training=is_training, name='res_6',
+                                   padding='same', use_bias=False, dilation=8, residual=False)
+            res_7 = residual_block(inputs=res_6, output_channels=self.feat_num * 4, kernel_size=3, stride=1,
+                                   is_training=is_training, name='res_7',
+                                   padding='same', use_bias=False, dilation=4, residual=False)
+            res_8 = residual_block(inputs=res_7, output_channels=self.feat_num * 2, kernel_size=3, stride=1,
+                                   is_training=is_training, name='res_8',
                                    padding='same', use_bias=False, dilation=2, residual=False)
-            # level 8
-            res_8 = residual_block(inputs=res_7, output_channels=self.feat_num*4, kernel_size=3, stride=1,
-                                   is_training=is_training, name='level_8',
+            res_9 = residual_block(inputs=res_8, output_channels=self.feat_num, kernel_size=3, stride=1,
+                                   is_training=is_training, name='res_9',
                                    padding='same', use_bias=False, dilation=1, residual=False)
-            '''
-            pool1 = tf.layers.max_pooling3d(
-                inputs=encoder1_2,
-                pool_size=2,                    # pool_depth, pool_height, pool_width
-                strides=2,
-                padding='valid',                # No padding, default
-                data_format='channels_last',    # default
-                name='pool1'
-            )
-            '''
-            feature = res_8
+            feature = res_9
             # predicted probability
             predicted_prob = conv3d(inputs=feature, output_channels=self.output_channels, kernel_size=1,
                                     stride=1, use_bias=True, name='predicted_prob')
             '''auxiliary prediction'''
-            '''
-            # forth level
-            auxiliary3_prob_8x = conv3d(inputs=encoder4_2, output_channels=self.output_channels, kernel_size=1,
-                                        stride=1, use_bias=True, name='auxiliary3_prob_8x')
-            auxiliary3_prob_4x = deconv3d(inputs=auxiliary3_prob_8x, output_channels=self.output_channels,
-                                          name='auxiliary3_prob_4x')
-            auxiliary3_prob_2x = deconv3d(inputs=auxiliary3_prob_4x, output_channels=self.output_channels,
-                                          name='auxiliary3_prob_2x')
-            auxiliary3_prob_1x = deconv3d(inputs=auxiliary3_prob_2x, output_channels=self.output_channels,
-                                          name='auxiliary3_prob_1x')
-            # third level
-            auxiliary2_prob_4x = conv3d(inputs=decoder3_2, output_channels=self.output_channels, kernel_size=1,
-                                        stride=1, use_bias=True, name='auxiliary2_prob_4x')
-            auxiliary2_prob_2x = deconv3d(inputs=auxiliary2_prob_4x, output_channels=self.output_channels,
-                                          name='auxiliary2_prob_2x')
-            auxiliary2_prob_1x = deconv3d(inputs=auxiliary2_prob_2x, output_channels=self.output_channels,
-                                          name='auxiliary2_prob_1x')
-            # second level
-            auxiliary1_prob_2x = conv3d(inputs=decoder2_2, output_channels=self.output_channels, kernel_size=1,
-                                        stride=1, use_bias=True, name='auxiliary1_prob_2x')
-            auxiliary1_prob_1x = deconv3d(inputs=auxiliary1_prob_2x, output_channels=self.output_channels,
-                                          name='auxiliary1_prob_1x')
-            '''
+            auxiliary3_prob_1x = conv3d(inputs=res_6, output_channels=self.output_channels, kernel_size=1,
+                                        stride=1, use_bias=True, name='auxiliary3_prob_1x')
+            auxiliary2_prob_1x = conv3d(inputs=res_7, output_channels=self.output_channels, kernel_size=1,
+                                        stride=1, use_bias=True, name='auxiliary2_prob_1x')
+            auxiliary1_prob_1x = conv3d(inputs=res_8, output_channels=self.output_channels, kernel_size=1,
+                                        stride=1, use_bias=True, name='auxiliary1_prob_1x')
 
         # device: cpu0
         with tf.device(device_name_or_function=self.device[2]):
             softmax_prob = tf.nn.softmax(logits=predicted_prob, name='softmax_prob')
             predicted_label = tf.argmax(input=softmax_prob, axis=4, name='predicted_label')
 
-        return predicted_prob, predicted_label
+        return predicted_prob, predicted_label, auxiliary1_prob_1x, auxiliary2_prob_1x, auxiliary3_prob_1x
 
     def build_unet_model(self):
         # input data and labels
@@ -322,7 +276,7 @@ class Unet3D(object):
 
         # regularization
         _norm = 0
-        tensor_name_dict = json_to_dict('regularization_unet.json', read_file=True)
+        tensor_name_dict = json_to_dict('kernel/regularization_unet.json', read_file=True)
         for tensor_name in tensor_name_dict.values():
             _tensor = tf.get_default_graph().get_tensor_by_name(tensor_name)
             _norm += tf.nn.l2_loss(_tensor)
@@ -373,26 +327,44 @@ class Unet3D(object):
                                                                         self.input_size, self.input_size],
                                                  name='input_ground_truth')
         # probability
-        self.predicted_prob, self.predicted_label = self.dilated_resnet_model(self.input_image)
+        self.predicted_prob, self.predicted_label, self.auxiliary1_prob_1x, \
+            self.auxiliary2_prob_1x, self.auxiliary3_prob_1x = self.dilated_resnet_model(self.input_image)
 
         # dice loss
         self.main_dice_loss = dice_loss_function(self.predicted_prob, self.input_ground_truth)
-        self.total_dice_loss = self.main_dice_loss * 2.4
+        self.auxiliary1_dice_loss = dice_loss_function(self.auxiliary1_prob_1x, self.input_ground_truth)
+        self.auxiliary2_dice_loss = dice_loss_function(self.auxiliary2_prob_1x, self.input_ground_truth)
+        self.auxiliary3_dice_loss = dice_loss_function(self.auxiliary3_prob_1x, self.input_ground_truth)
+        self.total_dice_loss = \
+            self.main_dice_loss + \
+            self.auxiliary1_dice_loss * 0.8 + \
+            self.auxiliary2_dice_loss * 0.4 + \
+            self.auxiliary3_dice_loss * 0.2
 
         # class-weighted cross-entropy loss
         self.main_weight_loss = softmax_loss_function(self.predicted_prob, self.input_ground_truth)
-        self.total_weight_loss = self.main_weight_loss * 2.8
+        self.auxiliary1_weight_loss = softmax_loss_function(self.auxiliary1_prob_1x, self.input_ground_truth)
+        self.auxiliary2_weight_loss = softmax_loss_function(self.auxiliary2_prob_1x, self.input_ground_truth)
+        self.auxiliary3_weight_loss = softmax_loss_function(self.auxiliary3_prob_1x, self.input_ground_truth)
+        self.total_weight_loss = \
+            self.main_weight_loss + \
+            self.auxiliary1_weight_loss * 0.9 + \
+            self.auxiliary2_weight_loss * 0.6 + \
+            self.auxiliary3_weight_loss * 0.3
+
+        # trainable variables
+        self.trainable_variables = tf.trainable_variables()
 
         # runtime update json file
-        with open('supplement/name_list.txt', 'w') as name_list:
-            for var in tf.trainable_variables():
-                name_list.write(f'{var}\n')
-        extract_tensor_name(file_read='supplement/name_list.txt',
-                            file_write='regularization_dilated.json')
+        with open('kernel/kernel_list.txt', 'w') as name_list:
+            for _var in self.trainable_variables:
+                name_list.write(f'{_var}\n')
+        extract_kernel_name(file_read='kernel/kernel_list.txt',
+                            file_write='kernel/regularization_dilated.json')
 
         # regularization
         _norm = 0
-        tensor_name_dict = json_to_dict('regularization_dilated.json', read_file=True)
+        tensor_name_dict = json_to_dict('kernel/regularization_dilated.json', read_file=True)
         for tensor_name in tensor_name_dict.values():
             _tensor = tf.get_default_graph().get_tensor_by_name(tensor_name)
             _norm += tf.nn.l2_loss(_tensor)
@@ -402,9 +374,6 @@ class Unet3D(object):
         self.total_loss = \
             self.total_dice_loss * self.dice_loss_coefficient + self.total_weight_loss + \
             self.l2_loss * self.l2_loss_coefficient
-
-        # trainable variables
-        self.trainable_variables = tf.trainable_variables()
 
         self.saver = tf.train.Saver(max_to_keep=20)
         # The Saver class adds ops to save and restore variables to and from checkpoints.
