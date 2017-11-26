@@ -20,7 +20,7 @@ def init_parameter(name):
     parameter_dict['output_channels'] = 3
     parameter_dict['learning_rate'] = 0.001
     parameter_dict['beta1'] = 0.5
-    parameter_dict['epoch'] = 10000  # 100000 -> 10000
+    parameter_dict['epoch'] = 50000  # 100000 -> 10000
     date_form = 'crop'
     parameter_dict['train_data_dir'] = f'../hvsmr/{date_form}/data/'
     parameter_dict['test_data_dir'] = f'../hvsmr/{date_form}/data/'
@@ -32,15 +32,21 @@ def init_parameter(name):
     parameter_dict['resize_coefficient'] = 1.0
     parameter_dict['test_stride'] = 32  # for overlap
     # from previous version
-    parameter_dict['save_interval'] = 1000  # 10000 -> 1000
-    parameter_dict['test_interval'] = 500  # ResNet
+    parameter_dict['save_interval'] = 10000  # 10000 -> 1000
+    parameter_dict['test_interval'] = 1000  # ResNet
     parameter_dict['cube_overlapping_factor'] = 4
-    parameter_dict['gpu'] = '0,1'
+    parameter_dict['gpu'] = '0'
 
     # scalable number of feature maps: default 32
     parameter_dict['feature_number'] = 16  # 32 -> 16
-    parameter_dict['index_start'] = 7
-    parameter_dict['index_included'] = 7
+    parameter_dict['index_start'] = 0
+    parameter_dict['index_included'] = 4
+
+    # for experiment
+    parameter_dict['rotation'] = False
+    parameter_dict['dice_option'] = None
+    parameter_dict['regularization'] = False
+    parameter_dict['network'] = 'unet'
 
     return parameter_dict
 
@@ -51,6 +57,11 @@ def main(_):
     parser.add_argument('-g', '--gpu', help='cuda visible devices')
     parser.add_argument('-t', '--test', action='store_true')
     parser.add_argument('-s', '--sample', help='sample selection')
+    # experiment
+    parser.add_argument('-R', '--rotation', action='store_true')
+    parser.add_argument('-d', '--dice', choices=['value', 'softmax'], help='dice type')
+    parser.add_argument('-r', '--regularization', action='store_true')
+    parser.add_argument('-n', '--network', choices=['unet', 'dilated'], help='network option')
     args = parser.parse_args()
     if args.gpu:
         gpu = args.gpu
@@ -85,6 +96,15 @@ def main(_):
         else:
             print('[!] Error parameter with 401 error code.')
             exit(401)
+    if args.rotation:
+        parameter_dict['rotation'] = True
+    if args.dice:
+        parameter_dict['dice_option'] = args.dice
+    if args.regularization:
+        parameter_dict['regularization'] = True
+    if args.network:
+        parameter_dict['network'] = args.network
+
     if not os.path.exists('json/'):
         os.makedirs('json/')
     parameter_json = dict_to_json(parameter_dict, write_file=True, file_name='json/parameter_' + name + '.json')

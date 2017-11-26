@@ -14,9 +14,28 @@ from loss_def import dice_loss_function, softmax_loss_function
 
 class Unet3D(object):
     def __init__(self, sess, parameter_dict):
-        # member variables
-        self.dice_loss_coefficient = 0.1
-        self.l2_loss_coefficient = 0.0005
+        # experiment
+        self.rotation = parameter_dict['rotation']
+        self.dice_option = parameter_dict['dice_option']
+        self.regularization = parameter_dict['regularization']
+        self.network = parameter_dict['network']
+
+        # dice option: value as default
+        self.use_softmax = False
+
+        if self.dice_option == 'value':
+            self.dice_loss_coefficient = 0.1
+        elif self.dice_option == 'softmax':
+            self.use_softmax = True
+            self.dice_loss_coefficient = 0.1
+        else:
+            self.dice_loss_coefficient = 0
+
+        # regularization
+        if self.regularization:
+            self.l2_loss_coefficient = 0.0005
+        else:
+            self.l2_loss_coefficient = 0
         
         self.input_image = None
         self.input_ground_truth = None
@@ -82,8 +101,13 @@ class Unet3D(object):
         self.cube_overlapping_factor = parameter_dict['cube_overlapping_factor']
 
         # build model
-        self.build_dilated_resnet_model()
-        # self.build_unet_model()
+        if self.network == 'unet':
+            self.build_unet_model()
+        elif self.network == 'dilated':
+            self.build_dilated_resnet_model()
+        else:
+            print('[!] Error network with 404 error code.')
+            exit(404)
 
     def unet_model(self, inputs):
         is_training = (self.phase == 'train')
@@ -254,10 +278,13 @@ class Unet3D(object):
             self.auxiliary2_prob_1x, self.auxiliary3_prob_1x = self.unet_model(self.input_image)
 
         # dice loss
-        self.main_dice_loss = dice_loss_function(self.predicted_prob, self.input_ground_truth)
-        self.auxiliary1_dice_loss = dice_loss_function(self.auxiliary1_prob_1x, self.input_ground_truth)
-        self.auxiliary2_dice_loss = dice_loss_function(self.auxiliary2_prob_1x, self.input_ground_truth)
-        self.auxiliary3_dice_loss = dice_loss_function(self.auxiliary3_prob_1x, self.input_ground_truth)
+        self.main_dice_loss = dice_loss_function(self.predicted_prob, self.input_ground_truth, self.use_softmax)
+        self.auxiliary1_dice_loss = dice_loss_function(
+            self.auxiliary1_prob_1x, self.input_ground_truth, self.use_softmax)
+        self.auxiliary2_dice_loss = dice_loss_function(
+            self.auxiliary2_prob_1x, self.input_ground_truth, self.use_softmax)
+        self.auxiliary3_dice_loss = dice_loss_function(
+            self.auxiliary3_prob_1x, self.input_ground_truth, self.use_softmax)
         self.total_dice_loss = \
             self.main_dice_loss + \
             self.auxiliary1_dice_loss * 0.8 + \
@@ -331,10 +358,13 @@ class Unet3D(object):
             self.auxiliary2_prob_1x, self.auxiliary3_prob_1x = self.dilated_resnet_model(self.input_image)
 
         # dice loss
-        self.main_dice_loss = dice_loss_function(self.predicted_prob, self.input_ground_truth)
-        self.auxiliary1_dice_loss = dice_loss_function(self.auxiliary1_prob_1x, self.input_ground_truth)
-        self.auxiliary2_dice_loss = dice_loss_function(self.auxiliary2_prob_1x, self.input_ground_truth)
-        self.auxiliary3_dice_loss = dice_loss_function(self.auxiliary3_prob_1x, self.input_ground_truth)
+        self.main_dice_loss = dice_loss_function(self.predicted_prob, self.input_ground_truth, self.use_softmax)
+        self.auxiliary1_dice_loss = dice_loss_function(
+            self.auxiliary1_prob_1x, self.input_ground_truth, self.use_softmax)
+        self.auxiliary2_dice_loss = dice_loss_function(
+            self.auxiliary2_prob_1x, self.input_ground_truth, self.use_softmax)
+        self.auxiliary3_dice_loss = dice_loss_function(
+            self.auxiliary3_prob_1x, self.input_ground_truth, self.use_softmax)
         self.total_dice_loss = \
             self.main_dice_loss + \
             self.auxiliary1_dice_loss * 0.8 + \
@@ -458,7 +488,7 @@ class Unet3D(object):
                 # load batch
                 train_data_batch, train_label_batch = get_image_and_label_batch(
                     image_data_list, label_data_list, self.input_size, self.batch_size,
-                    rotation_flag=True, flip_flag=True)
+                    rotation_flag=self.rotation, flip_flag=self.rotation)
                 # val_data_batch, val_label_batch = get_image_and_label_batch(
                 #     image_data_list, label_data_list, self.input_size, self.batch_size)
                 '''The same data at this stage'''
