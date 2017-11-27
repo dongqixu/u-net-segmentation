@@ -110,3 +110,4 @@ test/
 checkpoint/
 .idea/
 .DS_Store
+supplement/*.jpg

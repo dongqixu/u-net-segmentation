@@ -112,6 +112,11 @@ if __name__ == '__main__':
             print(f'======== {_line} ========')
             dice, jaccard, voe, vd, accuracy = extract_list(f'../test/output/{_line}')
             dice_0, dice_1, dice_2 = compute_average(jaccard)
-            print(f'{max(dice_0)}\t{max(dice_1)}\t{max(dice_2)}')
+            average = []
+            for index in range(len(dice_0)):
+                temp = (dice_0[index] + dice_1[index] + dice_2[index]) / 3
+                average.append(temp)
+            print(f'{max(dice_0)}\t{max(dice_1)}\t{max(dice_2)}\t{max(average)}')
+            # notice the name
             plot(_line, count, dice_0=dice_0, dice_1=dice_1, dice_2=dice_2, scale=True)
             count += 1
