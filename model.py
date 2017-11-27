@@ -229,11 +229,11 @@ class Unet3D(object):
             res_4 = residual_block(inputs=res_3, output_channels=self.feat_num * 8, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_4',
                                    padding='same', use_bias=False, dilation=8)
+
+        with tf.device(device_name_or_function=self.device[1]):
             res_5 = residual_block(inputs=res_4, output_channels=self.feat_num * 16, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_5',
                                    padding='same', use_bias=False, dilation=16)
-
-        with tf.device(device_name_or_function=self.device[1]):
             res_6 = residual_block(inputs=res_5, output_channels=self.feat_num * 8, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_6',
                                    padding='same', use_bias=False, dilation=8, residual=False)
