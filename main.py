@@ -29,7 +29,7 @@ def init_parameter(name):
     parameter_dict['model_name'] = f'hvsmr_{date_form}_{name}.model'
     parameter_dict['name_with_runtime'] = name
     parameter_dict['checkpoint_dir'] = 'checkpoint/'
-    parameter_dict['resize_coefficient'] = 1.0
+    parameter_dict['resize_coefficient'] = 1
     parameter_dict['test_stride'] = 32  # for overlap
     # from previous version
     parameter_dict['save_interval'] = 10000  # 10000 -> 1000
@@ -53,7 +53,7 @@ def init_parameter(name):
 
 # What is the input parameter
 def main(_):
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description='Process argument for parameter dictionary.')
     parser.add_argument('-g', '--gpu', help='cuda visible devices')
     parser.add_argument('-t', '--test', action='store_true')
     parser.add_argument('-s', '--sample', help='sample selection')
@@ -62,6 +62,10 @@ def main(_):
     parser.add_argument('-d', '--dice', choices=['value', 'softmax'], help='dice type')
     parser.add_argument('-r', '--regularization', action='store_true')
     parser.add_argument('-n', '--network', choices=['unet', 'dilated'], help='network option')
+    parser.add_argument('--epoch', help='training epochs')
+    parser.add_argument('--save_interval', help='save interval')
+    parser.add_argument('--test_interval', help='test interval')
+    parser.add_argument('--memory', help='memory usage for unlimited usage')
     args = parser.parse_args()
     if args.gpu:
         gpu = args.gpu
@@ -104,6 +108,12 @@ def main(_):
         parameter_dict['regularization'] = True
     if args.network:
         parameter_dict['network'] = args.network
+    if args.epoch:
+        parameter_dict['epoch'] = args.epoch
+    if args.save_interval:
+        parameter_dict['save_interval'] = args.save_interval
+    if args.test_interval:
+        parameter_dict['test_interval'] = args.test_interval
 
     if not os.path.exists('json/'):
         os.makedirs('json/')
@@ -111,7 +121,12 @@ def main(_):
     print(parameter_json)
 
     # gpu processing, for further set
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.475, allow_growth=True)
+    if args.memory:
+        memory = args.memory
+    else:
+        memory = 0.475
+    print(f'Memory fraction: {memory}')
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=memory, allow_growth=True)
 
     with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placement=True)) as sess:
         model = Unet3D(sess=sess, parameter_dict=parameter_dict)

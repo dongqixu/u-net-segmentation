@@ -148,22 +148,22 @@ def residual_block(inputs, output_channels, kernel_size, stride, is_training, na
         # second block
         conv_1 = conv3d(relu_0, output_channels, kernel_size, stride, padding=padding,
                         use_bias=use_bias, name=name + '_conv_b', dilation=dilation)
+        bn_1 = tf.contrib.layers.batch_norm(inputs=conv_1, decay=0.9, scale=True, epsilon=1e-5,
+                                            updates_collections=None, is_training=is_training,
+                                            scope=name + '_batch_norm_b')
+        out = bn_1
 
         # TODO: when is better?
         '''residual block'''
         if residual:
-            if conv_1.shape != inputs.shape:
+            if out.shape != inputs.shape:
                 # tensor shape mismatch problem
                 extension = conv3d(inputs, output_channels, kernel_size=1, stride=1, padding='same',
                                    use_bias=True, name=name + '_residual', dilation=1)
-                res = conv_1 + extension
+                residual = out + extension
             else:
-                res = conv_1 + inputs
+                residual = out + inputs
         else:
-            res = conv_1
-
-        bn_1 = tf.contrib.layers.batch_norm(inputs=res, decay=0.9, scale=True, epsilon=1e-5,
-                                            updates_collections=None, is_training=is_training,
-                                            scope=name + '_batch_norm_b')
-        relu_1 = tf.nn.relu(features=bn_1, name=name + '_relu_b')
+            residual = out
+        relu_1 = tf.nn.relu(features=residual, name=name + '_relu_b')
         return relu_1
