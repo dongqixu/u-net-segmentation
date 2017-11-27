@@ -229,11 +229,11 @@ class Unet3D(object):
             res_4 = residual_block(inputs=res_3, output_channels=self.feat_num * 8, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_4',
                                    padding='same', use_bias=False, dilation=8)
-
-        with tf.device(device_name_or_function=self.device[1]):
             res_5 = residual_block(inputs=res_4, output_channels=self.feat_num * 16, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_5',
                                    padding='same', use_bias=False, dilation=16)
+
+        with tf.device(device_name_or_function=self.device[1]):
             res_6 = residual_block(inputs=res_5, output_channels=self.feat_num * 8, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_6',
                                    padding='same', use_bias=False, dilation=8, residual=False)
@@ -365,22 +365,24 @@ class Unet3D(object):
             self.auxiliary2_prob_1x, self.input_ground_truth, self.use_softmax)
         self.auxiliary3_dice_loss = dice_loss_function(
             self.auxiliary3_prob_1x, self.input_ground_truth, self.use_softmax)
-        self.total_dice_loss = \
-            self.main_dice_loss + \
-            self.auxiliary1_dice_loss * 0.8 + \
-            self.auxiliary2_dice_loss * 0.4 + \
-            self.auxiliary3_dice_loss * 0.2
+        self.total_dice_loss = self.main_dice_loss * 2.4
+        # self.total_dice_loss = \
+        #     self.main_dice_loss + \
+        #     self.auxiliary1_dice_loss * 0.8 + \
+        #     self.auxiliary2_dice_loss * 0.4 + \
+        #     self.auxiliary3_dice_loss * 0.2
 
         # class-weighted cross-entropy loss
         self.main_weight_loss = softmax_loss_function(self.predicted_prob, self.input_ground_truth)
         self.auxiliary1_weight_loss = softmax_loss_function(self.auxiliary1_prob_1x, self.input_ground_truth)
         self.auxiliary2_weight_loss = softmax_loss_function(self.auxiliary2_prob_1x, self.input_ground_truth)
         self.auxiliary3_weight_loss = softmax_loss_function(self.auxiliary3_prob_1x, self.input_ground_truth)
-        self.total_weight_loss = \
-            self.main_weight_loss + \
-            self.auxiliary1_weight_loss * 0.9 + \
-            self.auxiliary2_weight_loss * 0.6 + \
-            self.auxiliary3_weight_loss * 0.3
+        self.total_weight_loss = self.main_weight_loss * 2.8
+        # self.total_weight_loss = \
+        #     self.main_weight_loss + \
+        #     self.auxiliary1_weight_loss * 0.9 + \
+        #     self.auxiliary2_weight_loss * 0.6 + \
+        #     self.auxiliary3_weight_loss * 0.3
 
         # trainable variables
         self.trainable_variables = tf.trainable_variables()
