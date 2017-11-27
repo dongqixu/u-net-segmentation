@@ -4,17 +4,19 @@ import tensorflow as tf
 
 
 # self-define dice loss
-def dice_loss_function(prediction, ground_truth, use_softmax=False):
+def dice_loss_function(prediction, ground_truth, use_softmax=False, use_log_weight=False):
     # TODO: any influence on softmax?
     if use_softmax:
         prediction = tf.nn.softmax(logits=prediction)
     ground_truth = tf.one_hot(indices=ground_truth, depth=3)
-    # # weight
-    # weight_list = []
-    # for i in range(3):
-    #     num = tf.reduce_sum(ground_truth[:, :, :, :, i]) / tf.reduce_sum(ground_truth)
-    #     weight_list.append(num)
-    # weight = get_weight_list(weight_list)
+    log_weight = None
+    if use_log_weight:
+        # weight
+        weight_list = []
+        for i in range(3):
+            num = tf.reduce_sum(ground_truth[:, :, :, :, i]) / tf.reduce_sum(ground_truth)
+            weight_list.append(num)
+        log_weight = get_weight_list(weight_list)
     dice_loss = 0
     for i in range(3):
         # reduce_mean calculation -> reduce_sum
@@ -23,7 +25,10 @@ def dice_loss_function(prediction, ground_truth, use_softmax=False):
         union_ground_truth = tf.reduce_sum(ground_truth[:, :, :, :, i] * ground_truth[:, :, :, :, i])
         union = union_ground_truth + union_prediction
         # weight should sum to 1 -> sum as 2 -> OK
-        weight = 1 - (tf.reduce_sum(ground_truth[:, :, :, :, i]) / tf.reduce_sum(ground_truth))
+        if use_log_weight:
+            weight = log_weight[i]
+        else:
+            weight = 1 - (tf.reduce_sum(ground_truth[:, :, :, :, i]) / tf.reduce_sum(ground_truth))
         dice_loss += (1 - 2 * intersection / union) * weight
     return dice_loss
 

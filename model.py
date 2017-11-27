@@ -19,6 +19,7 @@ class Unet3D(object):
         self.dice_option = parameter_dict['dice_option']
         self.regularization = parameter_dict['regularization']
         self.network = parameter_dict['network']
+        self.use_log_weight = parameter_dict['log_weight']
 
         # dice option: value as default
         self.use_softmax = False
@@ -278,13 +279,14 @@ class Unet3D(object):
             self.auxiliary2_prob_1x, self.auxiliary3_prob_1x = self.unet_model(self.input_image)
 
         # dice loss
-        self.main_dice_loss = dice_loss_function(self.predicted_prob, self.input_ground_truth, self.use_softmax)
+        self.main_dice_loss = dice_loss_function(self.predicted_prob, self.input_ground_truth,
+                                                 self.use_softmax, self.use_log_weight)
         self.auxiliary1_dice_loss = dice_loss_function(
-            self.auxiliary1_prob_1x, self.input_ground_truth, self.use_softmax)
+            self.auxiliary1_prob_1x, self.input_ground_truth, self.use_softmax, self.use_log_weight)
         self.auxiliary2_dice_loss = dice_loss_function(
-            self.auxiliary2_prob_1x, self.input_ground_truth, self.use_softmax)
+            self.auxiliary2_prob_1x, self.input_ground_truth, self.use_softmax, self.use_log_weight)
         self.auxiliary3_dice_loss = dice_loss_function(
-            self.auxiliary3_prob_1x, self.input_ground_truth, self.use_softmax)
+            self.auxiliary3_prob_1x, self.input_ground_truth, self.use_softmax, self.use_log_weight)
         self.total_dice_loss = \
             self.main_dice_loss + \
             self.auxiliary1_dice_loss * 0.8 + \
@@ -358,13 +360,14 @@ class Unet3D(object):
             self.auxiliary2_prob_1x, self.auxiliary3_prob_1x = self.dilated_resnet_model(self.input_image)
 
         # dice loss
-        self.main_dice_loss = dice_loss_function(self.predicted_prob, self.input_ground_truth, self.use_softmax)
+        self.main_dice_loss = dice_loss_function(self.predicted_prob, self.input_ground_truth,
+                                                 self.use_softmax, self.use_log_weight)
         self.auxiliary1_dice_loss = dice_loss_function(
-            self.auxiliary1_prob_1x, self.input_ground_truth, self.use_softmax)
+            self.auxiliary1_prob_1x, self.input_ground_truth, self.use_softmax, self.use_log_weight)
         self.auxiliary2_dice_loss = dice_loss_function(
-            self.auxiliary2_prob_1x, self.input_ground_truth, self.use_softmax)
+            self.auxiliary2_prob_1x, self.input_ground_truth, self.use_softmax, self.use_log_weight)
         self.auxiliary3_dice_loss = dice_loss_function(
-            self.auxiliary3_prob_1x, self.input_ground_truth, self.use_softmax)
+            self.auxiliary3_prob_1x, self.input_ground_truth, self.use_softmax, self.use_log_weight)
         self.total_dice_loss = self.main_dice_loss * 2.4
         # self.total_dice_loss = \
         #     self.main_dice_loss + \

@@ -47,6 +47,7 @@ def init_parameter(name):
     parameter_dict['dice_option'] = None
     parameter_dict['regularization'] = False
     parameter_dict['network'] = 'unet'
+    parameter_dict['log_weight'] = False
 
     return parameter_dict
 
@@ -66,6 +67,7 @@ def main(_):
     parser.add_argument('--save_interval', help='save interval')
     parser.add_argument('--test_interval', help='test interval')
     parser.add_argument('--memory', help='memory usage for unlimited usage')
+    parser.add_argument('--log_weight', action='store_true')
     args = parser.parse_args()
     if args.gpu:
         gpu = args.gpu
@@ -114,6 +116,8 @@ def main(_):
         parameter_dict['save_interval'] = int(args.save_interval)
     if args.test_interval:
         parameter_dict['test_interval'] = int(args.test_interval)
+    if args.log_weight:
+        parameter_dict['log_weight'] = True
 
     if not os.path.exists('json/'):
         os.makedirs('json/')

@@ -63,7 +63,8 @@ def compute_average(evaluation, scope=(5, 10)):
     label_0 = list()
     label_1 = list()
     label_2 = list()
-    for epoch in range(10):
+    train_epoch = len(evaluation[0])
+    for epoch in range(train_epoch):
         average_0 = sum(evaluation[sample][epoch][0] for sample in range(start, stop)) / (stop-start)
         average_1 = sum(evaluation[sample][epoch][1] for sample in range(start, stop)) / (stop-start)
         average_2 = sum(evaluation[sample][epoch][2] for sample in range(start, stop)) / (stop-start)
@@ -73,15 +74,26 @@ def compute_average(evaluation, scope=(5, 10)):
     return label_0, label_1, label_2
 
 
-def plot(title, file, **evaluation):
-    x_axis = [_i+1 for _i in range(10)]
+def plot(title, file, scale=False, **evaluation):
+    train_epoch = 0
+    for key in evaluation:
+        value = evaluation[key]
+        train_epoch = len(value)
+        break
+    x_axis = [_i+1 for _i in range(train_epoch)]
     for key in evaluation:
         value = evaluation[key]
         '''display only'''
-        for i in range(len(value)):
-            value[i] = value[i] * value[i]
+        if scale:
+            for i in range(len(value)):
+                value[i] = value[i] * value[i]
         '''display only'''
         plt.plot(x_axis, value, label=key)
+
+        highest = max(value)
+        highest_value = [highest for _ in range(len(value))]
+        plt.plot(x_axis, highest_value, label=f'{key}_highest')
+
     plt.xlabel('x-axis')
     plt.ylabel('y-axis')
     plt.suptitle(title)
@@ -99,6 +111,7 @@ if __name__ == '__main__':
             _line = _line.strip()
             print(f'======== {_line} ========')
             dice, jaccard, voe, vd, accuracy = extract_list(f'../test/output/{_line}')
-            dice_0, dice_1, dice_2 = compute_average(dice)
-            plot(_line, count, dice_0=dice_0, dice_1=dice_1, dice_2=dice_2)
+            dice_0, dice_1, dice_2 = compute_average(jaccard)
+            print(f'{max(dice_0)}\t{max(dice_1)}\t{max(dice_2)}')
+            plot(_line, count, dice_0=dice_0, dice_1=dice_1, dice_2=dice_2, scale=True)
             count += 1

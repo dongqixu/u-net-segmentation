@@ -15,6 +15,7 @@ def main():
     parser.add_argument('--save_interval', help='save interval')
     parser.add_argument('--test_interval', help='test interval')
     parser.add_argument('--memory', help='memory usage for unlimited usage')
+    parser.add_argument('--log_weight', action='store_true')
     _ = parser.parse_args()
 
 
