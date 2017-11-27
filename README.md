@@ -18,3 +18,29 @@ To Do List:
 5. **data_analysis code -> plot
 6. **dilated convolution
 7. cut out unnecessary ones of testing?*
+
+usage: main.py  [-h] [-g GPU] [-t] [-s SAMPLE] [-R]
+                [-d {value,softmax}] [-r] [-n {unet,dilated}]
+                [--epoch EPOCH] [--save_interval SAVE_INTERVAL]
+                [--test_interval TEST_INTERVAL] [--memory MEMORY]
+
+Process argument for parameter dictionary.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -g GPU, --gpu GPU     cuda visible devices
+  -t, --test
+  -s SAMPLE, --sample SAMPLE
+                        sample selection
+  -R, --rotation
+  -d {value,softmax}, --dice {value,softmax}
+                        dice type
+  -r, --regularization
+  -n {unet,dilated}, --network {unet,dilated}
+                        network option
+  --epoch EPOCH         training epochs
+  --save_interval SAVE_INTERVAL
+                        save interval
+  --test_interval TEST_INTERVAL
+                        test interval
+  --memory MEMORY       memory usage for unlimited usage

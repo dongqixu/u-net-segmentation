@@ -109,11 +109,11 @@ def main(_):
     if args.network:
         parameter_dict['network'] = args.network
     if args.epoch:
-        parameter_dict['epoch'] = args.epoch
+        parameter_dict['epoch'] = int(args.epoch)
     if args.save_interval:
-        parameter_dict['save_interval'] = args.save_interval
+        parameter_dict['save_interval'] = int(args.save_interval)
     if args.test_interval:
-        parameter_dict['test_interval'] = args.test_interval
+        parameter_dict['test_interval'] = int(args.test_interval)
 
     if not os.path.exists('json/'):
         os.makedirs('json/')
@@ -122,7 +122,7 @@ def main(_):
 
     # gpu processing, for further set
     if args.memory:
-        memory = args.memory
+        memory = float(args.memory)
     else:
         memory = 0.475
     print(f'Memory fraction: {memory}')
