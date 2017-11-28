@@ -25,10 +25,10 @@ class Unet3D(object):
         self.use_softmax = False
 
         if self.dice_option == 'value':
-            self.dice_loss_coefficient = 0.1
+            self.dice_loss_coefficient = parameter_dict['dice_loss_coefficient']  # default 0.1
         elif self.dice_option == 'softmax':
             self.use_softmax = True
-            self.dice_loss_coefficient = 0.1
+            self.dice_loss_coefficient = parameter_dict['dice_loss_coefficient']  # default 0.1
         else:
             self.dice_loss_coefficient = 0
 

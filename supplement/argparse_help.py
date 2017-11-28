@@ -16,6 +16,7 @@ def main():
     parser.add_argument('--test_interval', help='test interval')
     parser.add_argument('--memory', help='memory usage for unlimited usage')
     parser.add_argument('--log_weight', action='store_true')
+    parser.add_argument('--dice_coefficient', help='multiple of dice loss')
     _ = parser.parse_args()
 
 

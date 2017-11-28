@@ -48,6 +48,7 @@ def init_parameter(name):
     parameter_dict['regularization'] = False
     parameter_dict['network'] = 'unet'
     parameter_dict['log_weight'] = False
+    parameter_dict['dice_loss_coefficient'] = 0.1
 
     return parameter_dict
 
@@ -68,6 +69,7 @@ def main(_):
     parser.add_argument('--test_interval', help='test interval')
     parser.add_argument('--memory', help='memory usage for unlimited usage')
     parser.add_argument('--log_weight', action='store_true')
+    parser.add_argument('--dice_coefficient', help='multiple of dice loss')
     args = parser.parse_args()
     if args.gpu:
         gpu = args.gpu
@@ -118,6 +120,8 @@ def main(_):
         parameter_dict['test_interval'] = int(args.test_interval)
     if args.log_weight:
         parameter_dict['log_weight'] = True
+    if args.dice_coefficient:
+        parameter_dict['dice_loss_coefficient'] = float(args.dice_coefficient)
 
     if not os.path.exists('json/'):
         os.makedirs('json/')

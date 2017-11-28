@@ -23,7 +23,7 @@ usage: main.py  [-h] [-g GPU] [-t] [-s SAMPLE] [-R]
                 [-d {value,softmax}] [-r] [-n {unet,dilated}]
                 [--epoch EPOCH] [--save_interval SAVE_INTERVAL]
                 [--test_interval TEST_INTERVAL] [--memory MEMORY]
-                [--log_weight]
+                [--log_weight] [--dice_coefficient DICE_COEFFICIENT]
 
 Process argument for parameter dictionary.
 
@@ -46,3 +46,5 @@ optional arguments:
                         test interval
   --memory MEMORY       memory usage for unlimited usage
   --log_weight
+  --dice_coefficient DICE_COEFFICIENT
+                        multiple of dice loss
