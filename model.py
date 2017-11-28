@@ -34,7 +34,7 @@ class Unet3D(object):
 
         # regularization
         if self.regularization:
-            self.l2_loss_coefficient = 0.0005
+            self.l2_loss_coefficient = parameter_dict['l2_coefficient'] # default 0.0005
         else:
             self.l2_loss_coefficient = 0
         
@@ -266,6 +266,7 @@ class Unet3D(object):
 
         return predicted_prob, predicted_label, auxiliary1_prob_1x, auxiliary2_prob_1x, auxiliary3_prob_1x
 
+    # TODO: use supervised network
     def build_unet_model(self):
         # input data and labels
         self.input_image = tf.placeholder(dtype=tf.float32,

@@ -34,6 +34,7 @@ def dice_loss_function(prediction, ground_truth, use_softmax=False, use_log_weig
 
 
 # TODO: all zero cases -> rearrange weight? is it important?
+# TODO: may need to update weight
 def softmax_loss_function(prediction, ground_truth):
     # loss = weight * - target * log(softmax(logits))
     # prediction = logits

@@ -49,6 +49,7 @@ def init_parameter(name):
     parameter_dict['network'] = 'unet'
     parameter_dict['log_weight'] = False
     parameter_dict['dice_loss_coefficient'] = 0.1
+    parameter_dict['l2_coefficient'] = 0.0005
 
     return parameter_dict
 
@@ -70,6 +71,7 @@ def main(_):
     parser.add_argument('--memory', help='memory usage for unlimited usage')
     parser.add_argument('--log_weight', action='store_true')
     parser.add_argument('--dice_coefficient', help='multiple of dice loss')
+    parser.add_argument('--l2_coefficient', help='multiple of l2 loss')
     args = parser.parse_args()
     if args.gpu:
         gpu = args.gpu
@@ -122,6 +124,8 @@ def main(_):
         parameter_dict['log_weight'] = True
     if args.dice_coefficient:
         parameter_dict['dice_loss_coefficient'] = float(args.dice_coefficient)
+    if args.l2_coefficient:
+        parameter_dict['l2_coefficient'] = float(args.l2_coefficient)
 
     if not os.path.exists('json/'):
         os.makedirs('json/')

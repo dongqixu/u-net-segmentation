@@ -24,6 +24,7 @@ usage: main.py  [-h] [-g GPU] [-t] [-s SAMPLE] [-R]
                 [--epoch EPOCH] [--save_interval SAVE_INTERVAL]
                 [--test_interval TEST_INTERVAL] [--memory MEMORY]
                 [--log_weight] [--dice_coefficient DICE_COEFFICIENT]
+                [--l2_coefficient L2_COEFFICIENT]
 
 Process argument for parameter dictionary.
 
@@ -48,3 +49,5 @@ optional arguments:
   --log_weight
   --dice_coefficient DICE_COEFFICIENT
                         multiple of dice loss
+  --l2_coefficient L2_COEFFICIENT
+                        multiple of l2 loss
