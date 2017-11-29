@@ -20,7 +20,7 @@ def init_parameter(name):
     parameter_dict['output_channels'] = 3
     parameter_dict['learning_rate'] = 0.001
     parameter_dict['beta1'] = 0.5
-    parameter_dict['epoch'] = 50000  # 100000 -> 10000
+    parameter_dict['epoch'] = 35000  # 100000 -> 10000
     date_form = 'crop'
     parameter_dict['train_data_dir'] = f'../hvsmr/{date_form}/data/'
     parameter_dict['test_data_dir'] = f'../hvsmr/{date_form}/data/'
@@ -32,7 +32,7 @@ def init_parameter(name):
     parameter_dict['resize_coefficient'] = 1
     parameter_dict['test_stride'] = 32  # for overlap
     # from previous version
-    parameter_dict['save_interval'] = 10000  # 10000 -> 1000
+    parameter_dict['save_interval'] = 5000  # 10000 -> 1000
     parameter_dict['test_interval'] = 1000  # ResNet
     parameter_dict['cube_overlapping_factor'] = 4
     parameter_dict['gpu'] = '0'
@@ -72,6 +72,8 @@ def main(_):
     parser.add_argument('--log_weight', action='store_true')
     parser.add_argument('--dice_coefficient', help='multiple of dice loss')
     parser.add_argument('--l2_coefficient', help='multiple of l2 loss')
+    parser.add_argument('--feature', help='number of features')
+    # TODO:
     args = parser.parse_args()
     if args.gpu:
         gpu = args.gpu
