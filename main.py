@@ -43,8 +43,8 @@ def init_parameter(name):
     parameter_dict['index_included'] = 4
 
     # for experiment
-    parameter_dict['rotation'] = False
-    parameter_dict['dice_option'] = None
+    parameter_dict['rotation'] = True
+    parameter_dict['dice_option'] = 'value'
     parameter_dict['regularization'] = False
     parameter_dict['network'] = 'unet'
     parameter_dict['log_weight'] = False
