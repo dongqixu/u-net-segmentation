@@ -48,7 +48,7 @@ def init_parameter(name):
     parameter_dict['regularization'] = False
     parameter_dict['network'] = 'unet'
     parameter_dict['log_weight'] = False
-    parameter_dict['dice_loss_coefficient'] = 0.1
+    parameter_dict['dice_loss_coefficient'] = 0.5
     parameter_dict['l2_coefficient'] = 0.0005
 
     return parameter_dict
