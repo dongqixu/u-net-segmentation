@@ -20,6 +20,7 @@ class Unet3D(object):
         self.regularization = parameter_dict['regularization']
         self.network = parameter_dict['network']
         self.use_log_weight = parameter_dict['log_weight']
+        self.select_sample = parameter_dict['select_sample']
 
         # dice option: value as default
         self.use_softmax = False
@@ -472,12 +473,24 @@ class Unet3D(object):
         image_label_dict['image_data_list_full'] = image_data_list_full
         image_label_dict['label_data_list_full'] = label_data_list_full
         # sample selection
-        index_start = self.index_start
-        index_excluded = self.index_included + 1
-        image_data_list = image_data_list_full[index_start:index_excluded]
-        label_data_list = label_data_list_full[index_start:index_excluded]
-        print('Selected samples: ', image_list[index_start:index_excluded],
-              label_list[index_start:index_excluded])
+        if self.select_sample is None:
+            index_start = self.index_start
+            index_excluded = self.index_included + 1
+            image_data_list = image_data_list_full[index_start:index_excluded]
+            label_data_list = label_data_list_full[index_start:index_excluded]
+            print('Selected samples: ', image_list[index_start:index_excluded],
+                  label_list[index_start:index_excluded])
+        else:
+            image_data_list = list()
+            label_data_list = list()
+            image_name = list()
+            label_name = list()
+            for var in self.select_sample:
+                image_data_list.append(image_data_list_full[var])
+                label_data_list.append(label_data_list_full[var])
+                image_name.append(image_list[var])
+                label_name.append(label_list[var])
+            print('Selected samples: ', image_name, label_name)
         print('Data loaded successfully.')
 
         if not os.path.exists('loss/'):

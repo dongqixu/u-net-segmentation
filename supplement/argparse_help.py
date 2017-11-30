@@ -18,7 +18,15 @@ def main():
     parser.add_argument('--log_weight', action='store_true')
     parser.add_argument('--dice_coefficient', help='multiple of dice loss')
     parser.add_argument('--l2_coefficient', help='multiple of l2 loss')
-    _ = parser.parse_args()
+    parser.add_argument('--select', help='select samples from list')
+    args = parser.parse_args()
+
+    if args.select:
+        sample = list()
+        string = args.select.strip().split(',')
+        for var in string:
+            sample.append(int(var))
+        print(sample)
 
 
 if __name__ == '__main__':
