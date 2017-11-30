@@ -236,14 +236,16 @@ class Unet3D(object):
             # res_5 = residual_block(inputs=res_4, output_channels=self.feat_num * 16, kernel_size=3, stride=1,
             #                        is_training=is_training, name='res_5',
             #                        padding='same', use_bias=False, dilation=16)
-
-            res_5 = residual_block(inputs=res_4, output_channels=self.feat_num * 8, kernel_size=3, stride=1,
+            concat_1 = tf.concat([res_4, res_3], axis=concat_dimension, name='concat_1')
+            res_5 = residual_block(inputs=concat_1, output_channels=self.feat_num * 8, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_5',
                                    padding='same', use_bias=False, dilation=4, residual=False)
-            res_6 = residual_block(inputs=res_5, output_channels=self.feat_num * 4, kernel_size=3, stride=1,
+            concat_2 = tf.concat([res_5, res_2], axis=concat_dimension, name='concat_2')
+            res_6 = residual_block(inputs=concat_2, output_channels=self.feat_num * 4, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_6',
                                    padding='same', use_bias=False, dilation=2, residual=False)
-            res_7 = residual_block(inputs=res_6, output_channels=self.feat_num * 2, kernel_size=3, stride=1,
+            concat_3 = tf.concat([res_6, res_1], axis=concat_dimension, name='concat_3')
+            res_7 = residual_block(inputs=concat_3, output_channels=self.feat_num * 2, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_7',
                                    padding='same', use_bias=False, dilation=1, residual=False)
             # res_8 = residual_block(inputs=res_7, output_channels=self.feat_num * 2, kernel_size=3, stride=1,

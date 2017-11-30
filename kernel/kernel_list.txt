@@ -30,19 +30,19 @@
 <tf.Variable 'res_4/res_4_batch_norm_b/gamma:0' shape=(256,) dtype=float32_ref>
 <tf.Variable 'res_4/res_4_residual/kernel:0' shape=(1, 1, 1, 128, 256) dtype=float32_ref>
 <tf.Variable 'res_4/res_4_residual/bias:0' shape=(256,) dtype=float32_ref>
-<tf.Variable 'res_5/res_5_conv_a/kernel:0' shape=(3, 3, 3, 256, 128) dtype=float32_ref>
+<tf.Variable 'res_5/res_5_conv_a/kernel:0' shape=(3, 3, 3, 384, 128) dtype=float32_ref>
 <tf.Variable 'res_5/res_5_batch_norm_a/beta:0' shape=(128,) dtype=float32_ref>
 <tf.Variable 'res_5/res_5_batch_norm_a/gamma:0' shape=(128,) dtype=float32_ref>
 <tf.Variable 'res_5/res_5_conv_b/kernel:0' shape=(3, 3, 3, 128, 128) dtype=float32_ref>
 <tf.Variable 'res_5/res_5_batch_norm_b/beta:0' shape=(128,) dtype=float32_ref>
 <tf.Variable 'res_5/res_5_batch_norm_b/gamma:0' shape=(128,) dtype=float32_ref>
-<tf.Variable 'res_6/res_6_conv_a/kernel:0' shape=(3, 3, 3, 128, 64) dtype=float32_ref>
+<tf.Variable 'res_6/res_6_conv_a/kernel:0' shape=(3, 3, 3, 192, 64) dtype=float32_ref>
 <tf.Variable 'res_6/res_6_batch_norm_a/beta:0' shape=(64,) dtype=float32_ref>
 <tf.Variable 'res_6/res_6_batch_norm_a/gamma:0' shape=(64,) dtype=float32_ref>
 <tf.Variable 'res_6/res_6_conv_b/kernel:0' shape=(3, 3, 3, 64, 64) dtype=float32_ref>
 <tf.Variable 'res_6/res_6_batch_norm_b/beta:0' shape=(64,) dtype=float32_ref>
 <tf.Variable 'res_6/res_6_batch_norm_b/gamma:0' shape=(64,) dtype=float32_ref>
-<tf.Variable 'res_7/res_7_conv_a/kernel:0' shape=(3, 3, 3, 64, 32) dtype=float32_ref>
+<tf.Variable 'res_7/res_7_conv_a/kernel:0' shape=(3, 3, 3, 96, 32) dtype=float32_ref>
 <tf.Variable 'res_7/res_7_batch_norm_a/beta:0' shape=(32,) dtype=float32_ref>
 <tf.Variable 'res_7/res_7_batch_norm_a/gamma:0' shape=(32,) dtype=float32_ref>
 <tf.Variable 'res_7/res_7_conv_b/kernel:0' shape=(3, 3, 3, 32, 32) dtype=float32_ref>
