@@ -215,7 +215,7 @@ class Unet3D(object):
 
     def dilated_resnet_model(self, inputs):
         is_training = (self.phase == 'train')
-        # concat_dimension = 4  # channels_last
+        concat_dimension = 4  # channels_last
 
         # device: gpu0
         with tf.device(device_name_or_function=self.device[0]):
@@ -233,31 +233,32 @@ class Unet3D(object):
                                    padding='same', use_bias=False, dilation=8)
 
         with tf.device(device_name_or_function=self.device[1]):
-            res_5 = residual_block(inputs=res_4, output_channels=self.feat_num * 16, kernel_size=3, stride=1,
+            # res_5 = residual_block(inputs=res_4, output_channels=self.feat_num * 16, kernel_size=3, stride=1,
+            #                        is_training=is_training, name='res_5',
+            #                        padding='same', use_bias=False, dilation=16)
+
+            res_5 = residual_block(inputs=res_4, output_channels=self.feat_num * 8, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_5',
-                                   padding='same', use_bias=False, dilation=16)
-            res_6 = residual_block(inputs=res_5, output_channels=self.feat_num * 8, kernel_size=3, stride=1,
-                                   is_training=is_training, name='res_6',
-                                   padding='same', use_bias=False, dilation=8, residual=False)
-            res_7 = residual_block(inputs=res_6, output_channels=self.feat_num * 4, kernel_size=3, stride=1,
-                                   is_training=is_training, name='res_7',
                                    padding='same', use_bias=False, dilation=4, residual=False)
-            res_8 = residual_block(inputs=res_7, output_channels=self.feat_num * 2, kernel_size=3, stride=1,
-                                   is_training=is_training, name='res_8',
+            res_6 = residual_block(inputs=res_5, output_channels=self.feat_num * 4, kernel_size=3, stride=1,
+                                   is_training=is_training, name='res_6',
                                    padding='same', use_bias=False, dilation=2, residual=False)
-            res_9 = residual_block(inputs=res_8, output_channels=self.feat_num, kernel_size=3, stride=1,
-                                   is_training=is_training, name='res_9',
+            res_7 = residual_block(inputs=res_6, output_channels=self.feat_num * 2, kernel_size=3, stride=1,
+                                   is_training=is_training, name='res_7',
                                    padding='same', use_bias=False, dilation=1, residual=False)
-            feature = res_9
+            # res_8 = residual_block(inputs=res_7, output_channels=self.feat_num * 2, kernel_size=3, stride=1,
+            #                        is_training=is_training, name='res_8',
+            #                        padding='same', use_bias=False, dilation=1, residual=False)
+            feature = res_7
             # predicted probability
             predicted_prob = conv3d(inputs=feature, output_channels=self.output_channels, kernel_size=1,
                                     stride=1, use_bias=True, name='predicted_prob')
             '''auxiliary prediction'''
-            auxiliary3_prob_1x = conv3d(inputs=res_6, output_channels=self.output_channels, kernel_size=1,
+            auxiliary3_prob_1x = conv3d(inputs=res_4, output_channels=self.output_channels, kernel_size=1,
                                         stride=1, use_bias=True, name='auxiliary3_prob_1x')
-            auxiliary2_prob_1x = conv3d(inputs=res_7, output_channels=self.output_channels, kernel_size=1,
+            auxiliary2_prob_1x = conv3d(inputs=res_5, output_channels=self.output_channels, kernel_size=1,
                                         stride=1, use_bias=True, name='auxiliary2_prob_1x')
-            auxiliary1_prob_1x = conv3d(inputs=res_8, output_channels=self.output_channels, kernel_size=1,
+            auxiliary1_prob_1x = conv3d(inputs=res_6, output_channels=self.output_channels, kernel_size=1,
                                         stride=1, use_bias=True, name='auxiliary1_prob_1x')
 
         # device: cpu0
@@ -370,24 +371,24 @@ class Unet3D(object):
             self.auxiliary2_prob_1x, self.input_ground_truth, self.use_softmax, self.use_log_weight)
         self.auxiliary3_dice_loss = dice_loss_function(
             self.auxiliary3_prob_1x, self.input_ground_truth, self.use_softmax, self.use_log_weight)
-        self.total_dice_loss = self.main_dice_loss * 2.4
-        # self.total_dice_loss = \
-        #     self.main_dice_loss + \
-        #     self.auxiliary1_dice_loss * 0.8 + \
-        #     self.auxiliary2_dice_loss * 0.4 + \
-        #     self.auxiliary3_dice_loss * 0.2
+        # self.total_dice_loss = self.main_dice_loss * 2.4
+        self.total_dice_loss = \
+            self.main_dice_loss + \
+            self.auxiliary1_dice_loss * 0.8 + \
+            self.auxiliary2_dice_loss * 0.4 + \
+            self.auxiliary3_dice_loss * 0.2
 
         # class-weighted cross-entropy loss
         self.main_weight_loss = softmax_loss_function(self.predicted_prob, self.input_ground_truth)
         self.auxiliary1_weight_loss = softmax_loss_function(self.auxiliary1_prob_1x, self.input_ground_truth)
         self.auxiliary2_weight_loss = softmax_loss_function(self.auxiliary2_prob_1x, self.input_ground_truth)
         self.auxiliary3_weight_loss = softmax_loss_function(self.auxiliary3_prob_1x, self.input_ground_truth)
-        self.total_weight_loss = self.main_weight_loss * 2.8
-        # self.total_weight_loss = \
-        #     self.main_weight_loss + \
-        #     self.auxiliary1_weight_loss * 0.9 + \
-        #     self.auxiliary2_weight_loss * 0.6 + \
-        #     self.auxiliary3_weight_loss * 0.3
+        # self.total_weight_loss = self.main_weight_loss * 2.8
+        self.total_weight_loss = \
+            self.main_weight_loss + \
+            self.auxiliary1_weight_loss * 0.9 + \
+            self.auxiliary2_weight_loss * 0.6 + \
+            self.auxiliary3_weight_loss * 0.3
 
         # trainable variables
         self.trainable_variables = tf.trainable_variables()
