@@ -15,10 +15,14 @@
     "13": "res_5/res_5_conv_b/kernel:0",
     "14": "res_6/res_6_conv_a/kernel:0",
     "15": "res_6/res_6_conv_b/kernel:0",
-    "16": "res_7/res_7_conv_a/kernel:0",
-    "17": "res_7/res_7_conv_b/kernel:0",
-    "18": "predicted_prob/kernel:0",
-    "19": "auxiliary3_prob_1x/kernel:0",
-    "20": "auxiliary2_prob_1x/kernel:0",
-    "21": "auxiliary1_prob_1x/kernel:0"
+    "16": "deconv1/deconv1_deconv/filter:0",
+    "17": "res_7/res_7_conv_a/kernel:0",
+    "18": "res_7/res_7_conv_b/kernel:0",
+    "19": "predicted_prob/kernel:0",
+    "20": "auxiliary3_prob_2x/kernel:0",
+    "21": "auxiliary3_prob_1x/filter:0",
+    "22": "auxiliary2_prob_2x/kernel:0",
+    "23": "auxiliary2_prob_1x/filter:0",
+    "24": "auxiliary1_prob_2x/kernel:0",
+    "25": "auxiliary1_prob_1x/filter:0"
 }

@@ -222,15 +222,17 @@ class Unet3D(object):
             res_1 = residual_block(inputs=inputs, output_channels=self.feat_num, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_1',
                                    padding='same', use_bias=False, dilation=1)
-            res_2 = residual_block(inputs=res_1, output_channels=self.feat_num * 2, kernel_size=3, stride=1,
+            pool1 = tf.layers.max_pooling3d(inputs=res_1, pool_size=2, strides=2, name='pool1')
+
+            res_2 = residual_block(inputs=pool1, output_channels=self.feat_num * 2, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_2',
-                                   padding='same', use_bias=False, dilation=2)
+                                   padding='same', use_bias=False, dilation=1)
             res_3 = residual_block(inputs=res_2, output_channels=self.feat_num * 4, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_3',
-                                   padding='same', use_bias=False, dilation=4)
+                                   padding='same', use_bias=False, dilation=2)
             res_4 = residual_block(inputs=res_3, output_channels=self.feat_num * 8, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_4',
-                                   padding='same', use_bias=False, dilation=8)
+                                   padding='same', use_bias=False, dilation=4)
 
         with tf.device(device_name_or_function=self.device[1]):
             # res_5 = residual_block(inputs=res_4, output_channels=self.feat_num * 16, kernel_size=3, stride=1,
@@ -239,12 +241,15 @@ class Unet3D(object):
             concat_1 = tf.concat([res_4, res_3], axis=concat_dimension, name='concat_1')
             res_5 = residual_block(inputs=concat_1, output_channels=self.feat_num * 8, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_5',
-                                   padding='same', use_bias=False, dilation=4, residual=False)
+                                   padding='same', use_bias=False, dilation=2, residual=False)
             concat_2 = tf.concat([res_5, res_2], axis=concat_dimension, name='concat_2')
             res_6 = residual_block(inputs=concat_2, output_channels=self.feat_num * 4, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_6',
-                                   padding='same', use_bias=False, dilation=2, residual=False)
-            concat_3 = tf.concat([res_6, res_1], axis=concat_dimension, name='concat_3')
+                                   padding='same', use_bias=False, dilation=1, residual=False)
+
+            deconv1 = deconv_bn_relu(inputs=res_6, output_channels=self.feat_num * 4, is_training=is_training,
+                                     name='deconv1')
+            concat_3 = tf.concat([deconv1, res_1], axis=concat_dimension, name='concat_3')
             res_7 = residual_block(inputs=concat_3, output_channels=self.feat_num * 2, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_7',
                                    padding='same', use_bias=False, dilation=1, residual=False)
@@ -256,12 +261,20 @@ class Unet3D(object):
             predicted_prob = conv3d(inputs=feature, output_channels=self.output_channels, kernel_size=1,
                                     stride=1, use_bias=True, name='predicted_prob')
             '''auxiliary prediction'''
-            auxiliary3_prob_1x = conv3d(inputs=res_4, output_channels=self.output_channels, kernel_size=1,
-                                        stride=1, use_bias=True, name='auxiliary3_prob_1x')
-            auxiliary2_prob_1x = conv3d(inputs=res_5, output_channels=self.output_channels, kernel_size=1,
-                                        stride=1, use_bias=True, name='auxiliary2_prob_1x')
-            auxiliary1_prob_1x = conv3d(inputs=res_6, output_channels=self.output_channels, kernel_size=1,
-                                        stride=1, use_bias=True, name='auxiliary1_prob_1x')
+            auxiliary3_prob_2x = conv3d(inputs=res_4, output_channels=self.output_channels, kernel_size=1,
+                                        stride=1, use_bias=True, name='auxiliary3_prob_2x')
+            auxiliary3_prob_1x = deconv3d(inputs=auxiliary3_prob_2x, output_channels=self.output_channels,
+                                          name='auxiliary3_prob_1x')
+
+            auxiliary2_prob_2x = conv3d(inputs=res_5, output_channels=self.output_channels, kernel_size=1,
+                                        stride=1, use_bias=True, name='auxiliary2_prob_2x')
+            auxiliary2_prob_1x = deconv3d(inputs=auxiliary2_prob_2x, output_channels=self.output_channels,
+                                          name='auxiliary2_prob_1x')
+
+            auxiliary1_prob_2x = conv3d(inputs=res_6, output_channels=self.output_channels, kernel_size=1,
+                                        stride=1, use_bias=True, name='auxiliary1_prob_2x')
+            auxiliary1_prob_1x = deconv3d(inputs=auxiliary1_prob_2x, output_channels=self.output_channels,
+                                          name='auxiliary1_prob_1x')
 
         # device: cpu0
         with tf.device(device_name_or_function=self.device[2]):
