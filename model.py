@@ -219,7 +219,9 @@ class Unet3D(object):
 
         # device: gpu0
         with tf.device(device_name_or_function=self.device[0]):
-            res_1 = residual_block(inputs=inputs, output_channels=self.feat_num, kernel_size=3, stride=1,
+            conv_1 = conv_bn_relu(inputs=inputs, output_channels=self.feat_num // 2, kernel_size=7, stride=1,
+                                  is_training=is_training, name='conv_1')
+            res_1 = residual_block(inputs=conv_1, output_channels=self.feat_num, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_1',
                                    padding='same', use_bias=False, dilation=1)
             pool1 = tf.layers.max_pooling3d(inputs=res_1, pool_size=2, strides=2, name='pool1')
@@ -241,7 +243,7 @@ class Unet3D(object):
             concat_1 = tf.concat([res_4, res_3], axis=concat_dimension, name='concat_1')
             res_5 = residual_block(inputs=concat_1, output_channels=self.feat_num * 8, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_5',
-                                   padding='same', use_bias=False, dilation=2, residual=False)
+                                   padding='same', use_bias=False, dilation=1, residual=False)
             concat_2 = tf.concat([res_5, res_2], axis=concat_dimension, name='concat_2')
             res_6 = residual_block(inputs=concat_2, output_channels=self.feat_num * 4, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_6',
