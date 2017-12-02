@@ -243,7 +243,7 @@ class Unet3D(object):
             concat_1 = tf.concat([res_4, res_3], axis=concat_dimension, name='concat_1')
             res_5 = residual_block(inputs=concat_1, output_channels=self.feat_num * 8, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_5',
-                                   padding='same', use_bias=False, dilation=1, residual=False)
+                                   padding='same', use_bias=False, dilation=2, residual=False)
             concat_2 = tf.concat([res_5, res_2], axis=concat_dimension, name='concat_2')
             res_6 = residual_block(inputs=concat_2, output_channels=self.feat_num * 4, kernel_size=3, stride=1,
                                    is_training=is_training, name='res_6',
