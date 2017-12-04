@@ -1,5 +1,6 @@
 import re
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 # extract data from output script
@@ -74,7 +75,7 @@ def compute_average(evaluation, scope=(5, 10)):
     return label_0, label_1, label_2
 
 
-def plot(title, file, scale=False, **evaluation):
+def plot(title, file, scale=False, x='x-axis', y='y-axis', **evaluation):
     train_epoch = 0
     for key in evaluation:
         value = evaluation[key]
@@ -90,14 +91,14 @@ def plot(title, file, scale=False, **evaluation):
         '''display only'''
         plt.plot(x_axis, value, label=key)
 
-        highest = max(value)
-        highest_value = [highest for _ in range(len(value))]
-        plt.plot(x_axis, highest_value, label=f'{key}_highest')
+        # highest = max(value)
+        # highest_value = [highest for _ in range(len(value))]
+        # plt.plot(x_axis, highest_value, label=f'{key}_highest')
 
-    plt.xlabel('x-axis')
-    plt.ylabel('y-axis')
+    plt.xlabel(x)
+    plt.ylabel(y)
     plt.suptitle(title)
-    plt.ylim((0.36, 1))
+    plt.ylim((0.5, 1))
     plt.legend()
     plt.grid(True)
     plt.savefig(f'{file}_.jpg')
@@ -105,18 +106,24 @@ def plot(title, file, scale=False, **evaluation):
 
 
 if __name__ == '__main__':
-    with open('../test/output/time_order.txt') as _file:
+    with open('../test/output/plot_list.txt') as _file:
         count = 1
         for _line in _file:
             _line = _line.strip()
             print(f'======== {_line} ========')
             dice, jaccard, voe, vd, accuracy = extract_list(f'../test/output/{_line}')
-            dice_0, dice_1, dice_2 = compute_average(dice)
+            option = jaccard
+            option_0, option_1, option_2 = compute_average(option)
             average = []
-            for index in range(len(dice_0)):
-                temp = (dice_1[index] + dice_2[index]) / 2
+            for index in range(len(option_0)):
+                temp = (option_1[index] + option_2[index]) / 2
                 average.append(temp)
-            print(f'{max(dice_0)}\t{max(dice_1)}\t{max(dice_2)}\t{max(average)}')
+            # print(f'{max(dice_0)}\t{max(dice_1)}\t{max(dice_2)}\t{max(average)}')
+            max_index = np.argmax(average)
+            print(f'{option_0[max_index]}\t{option_1[max_index]}\t{option_2[max_index]}\t'
+                  f'{average[max_index]}\t{max_index}')
+            print(f'{option[5][max_index][1]}\t{option[6][max_index][1]}\t{option[7][max_index][1]}'
+                  f'\t{option[8][max_index][1]}\t{option[9][max_index][1]}')
             # notice the name
-            plot(_line, count, dice_0=dice_0, dice_1=dice_1, dice_2=dice_2, scale=True)
+            plot(_line, count, option_0=option_0, option_1=option_1, option_2=option_2, scale=False)
             count += 1
