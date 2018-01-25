@@ -2,10 +2,10 @@ import os
 import numpy as np
 import tensorflow as tf
 import time
-from conv_def import conv_bn_relu, deconv_bn_relu, conv3d, deconv3d, residual_block
+from conv_def import conv_bn_relu, deconv_bn_relu, conv3d, deconv3d, residual_block, aggregated_residual_layer
 from data_io import load_image_and_label, get_image_and_label_batch
 from glob import glob
-from json_io import dict_to_json, json_to_dict
+from json_io import dict_to_json
 from loss_def import dice_loss_function, softmax_loss_function
 
 ''' 3D U-Net Model '''
@@ -275,6 +275,82 @@ class Unet3D(object):
 
         return predicted_prob, predicted_label, auxiliary1_prob_1x, auxiliary2_prob_1x, auxiliary3_prob_1x
 
+    def aggregated_resnet(self, inputs):
+        is_training = (self.phase == 'train')
+        concat_dimension = 4  # channels_last
+
+        # device: gpu0
+        with tf.device(device_name_or_function=self.device[0]):
+            conv_1 = conv_bn_relu(inputs=inputs, output_channels=self.feat_num, kernel_size=7, stride=1,
+                                  is_training=is_training, name='conv_1')
+            res_1 = aggregated_residual_layer(inputs=conv_1, output_channels=self.feat_num * 2, cardinality=4,
+                                              bottleneck_d=4, is_training=is_training,
+                                              name='res_1', padding='same', use_bias=False,
+                                              dilation=1)
+            pool1 = tf.layers.max_pooling3d(inputs=res_1, pool_size=2, strides=2, name='pool1')
+
+            res_2 = aggregated_residual_layer(inputs=pool1, output_channels=self.feat_num * 4, cardinality=8,
+                                              bottleneck_d=4, is_training=is_training,
+                                              name='res_2', padding='same', use_bias=False,
+                                              dilation=1)
+            res_3 = aggregated_residual_layer(inputs=res_2, output_channels=self.feat_num * 8, cardinality=16,
+                                              bottleneck_d=4, is_training=is_training,
+                                              name='res_3', padding='same', use_bias=False,
+                                              dilation=2)
+            res_4 = aggregated_residual_layer(inputs=res_3, output_channels=self.feat_num * 16, cardinality=32,
+                                              bottleneck_d=4, is_training=is_training,
+                                              name='res_4', padding='same', use_bias=False,
+                                              dilation=4)
+
+        with tf.device(device_name_or_function=self.device[1]):
+            concat_1 = tf.concat([res_4, res_3], axis=concat_dimension, name='concat_1')
+            res_5 = aggregated_residual_layer(inputs=concat_1, output_channels=self.feat_num * 8, cardinality=16,
+                                              bottleneck_d=4, is_training=is_training,
+                                              name='res_5', padding='same', use_bias=False,
+                                              dilation=2, residual=True)
+            concat_2 = tf.concat([res_5, res_2], axis=concat_dimension, name='concat_2')
+            res_6 = aggregated_residual_layer(inputs=concat_2, output_channels=self.feat_num * 4, cardinality=8,
+                                              bottleneck_d=4, is_training=is_training,
+                                              name='res_6', padding='same', use_bias=False,
+                                              dilation=1, residual=True)
+            deconv1 = deconv_bn_relu(inputs=res_6, output_channels=self.feat_num * 2, is_training=is_training,
+                                     name='deconv1')
+            concat_3 = tf.concat([deconv1, res_1], axis=concat_dimension, name='concat_3')
+            res_7 = aggregated_residual_layer(inputs=concat_3, output_channels=self.feat_num * 2, cardinality=4,
+                                              bottleneck_d=4, is_training=is_training,
+                                              name='res_7', padding='same', use_bias=False,
+                                              dilation=1, residual=False)
+
+            # res_8 = residual_block(inputs=res_7, output_channels=self.feat_num * 2, kernel_size=3, stride=1,
+            #                        is_training=is_training, name='res_8',
+            #                        padding='same', use_bias=False, dilation=1, residual=False)
+            feature = res_7
+            # predicted probability
+            predicted_prob = conv3d(inputs=feature, output_channels=self.output_channels, kernel_size=1,
+                                    stride=1, use_bias=True, name='predicted_prob')
+            '''auxiliary prediction'''
+            auxiliary3_prob_2x = conv3d(inputs=res_4, output_channels=self.output_channels, kernel_size=1,
+                                        stride=1, use_bias=True, name='auxiliary3_prob_2x')
+            auxiliary3_prob_1x = deconv3d(inputs=auxiliary3_prob_2x, output_channels=self.output_channels,
+                                          name='auxiliary3_prob_1x')
+
+            auxiliary2_prob_2x = conv3d(inputs=res_5, output_channels=self.output_channels, kernel_size=1,
+                                        stride=1, use_bias=True, name='auxiliary2_prob_2x')
+            auxiliary2_prob_1x = deconv3d(inputs=auxiliary2_prob_2x, output_channels=self.output_channels,
+                                          name='auxiliary2_prob_1x')
+
+            auxiliary1_prob_2x = conv3d(inputs=res_6, output_channels=self.output_channels, kernel_size=1,
+                                        stride=1, use_bias=True, name='auxiliary1_prob_2x')
+            auxiliary1_prob_1x = deconv3d(inputs=auxiliary1_prob_2x, output_channels=self.output_channels,
+                                          name='auxiliary1_prob_1x')
+
+        # device: cpu0
+        with tf.device(device_name_or_function=self.device[2]):
+            softmax_prob = tf.nn.softmax(logits=predicted_prob, name='softmax_prob')
+            predicted_label = tf.argmax(input=softmax_prob, axis=4, name='predicted_label')
+
+        return predicted_prob, predicted_label, auxiliary1_prob_1x, auxiliary2_prob_1x, auxiliary3_prob_1x
+
     def build_unet_model(self):
         # input data and labels
         self.input_image = tf.placeholder(dtype=tf.float32,
@@ -366,7 +442,8 @@ class Unet3D(object):
                                                  name='input_ground_truth')
         # probability
         self.predicted_prob, self.predicted_label, self.auxiliary1_prob_1x, \
-            self.auxiliary2_prob_1x, self.auxiliary3_prob_1x = self.dilated_resnet_model(self.input_image)
+            self.auxiliary2_prob_1x, self.auxiliary3_prob_1x = self.aggregated_resnet(self.input_image)
+        # TODO: self.dilated_resnet_model(self.input_image)
 
         # dice loss
         self.main_dice_loss = dice_loss_function(self.predicted_prob, self.input_ground_truth,

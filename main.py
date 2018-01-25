@@ -43,7 +43,7 @@ def init_parameter(name):
     # for experiment
     parameter_dict['rotation'] = True
     parameter_dict['dice_option'] = 'value'
-    parameter_dict['network'] = 'unet'
+    parameter_dict['network'] = 'dilated'
     parameter_dict['log_weight'] = False
     parameter_dict['dice_loss_coefficient'] = 0.25
     parameter_dict['select_sample'] = None

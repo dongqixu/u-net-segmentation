@@ -198,7 +198,7 @@ def aggregated_residual_layer(inputs, output_channels, cardinality, bottleneck_d
     if residual:
         if transition.shape != inputs.shape:
             # tensor shape mismatch problem
-            extension = conv3d(inputs, output_channels * 2, kernel_size=1, stride=1, padding='same',
+            extension = conv3d(inputs, output_channels, kernel_size=1, stride=1, padding='same',
                                use_bias=True, name=name+'_residual', dilation=1)
             out = transition + extension
         else:
