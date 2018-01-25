@@ -303,19 +303,25 @@ class Unet3D(object):
                                               dilation=4)
 
         with tf.device(device_name_or_function=self.device[1]):
-            concat_1 = tf.concat([res_4, res_3], axis=concat_dimension, name='concat_1')
+            fuse_1 = conv_bn_relu(inputs=res_3, output_channels=self.feat_num * 16, kernel_size=1, stride=1,
+                                  is_training=is_training, name='fuse_1')
+            concat_1 = res_4 + fuse_1
             res_5 = aggregated_residual_layer(inputs=concat_1, output_channels=self.feat_num * 8, cardinality=16,
                                               bottleneck_d=4, is_training=is_training,
                                               name='res_5', padding='same', use_bias=False,
                                               dilation=2, residual=True)
-            concat_2 = tf.concat([res_5, res_2], axis=concat_dimension, name='concat_2')
+            fuse_2 = conv_bn_relu(inputs=res_2, output_channels=self.feat_num * 8, kernel_size=1, stride=1,
+                                  is_training=is_training, name='fuse_2')
+            concat_2 = res_5 + fuse_2
             res_6 = aggregated_residual_layer(inputs=concat_2, output_channels=self.feat_num * 4, cardinality=8,
                                               bottleneck_d=4, is_training=is_training,
                                               name='res_6', padding='same', use_bias=False,
                                               dilation=1, residual=True)
             deconv1 = deconv_bn_relu(inputs=res_6, output_channels=self.feat_num * 2, is_training=is_training,
                                      name='deconv1')
-            concat_3 = tf.concat([deconv1, res_1], axis=concat_dimension, name='concat_3')
+            fuse_3 = conv_bn_relu(inputs=res_1, output_channels=self.feat_num * 2, kernel_size=1, stride=1,
+                                  is_training=is_training, name='fuse_3')
+            concat_3 = deconv1 + fuse_3
             res_7 = aggregated_residual_layer(inputs=concat_3, output_channels=self.feat_num * 2, cardinality=4,
                                               bottleneck_d=4, is_training=is_training,
                                               name='res_7', padding='same', use_bias=False,
