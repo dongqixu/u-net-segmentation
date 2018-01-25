@@ -297,10 +297,14 @@ class Unet3D(object):
                                               bottleneck_d=4, is_training=is_training,
                                               name='res_3', padding='same', use_bias=False,
                                               dilation=2)
-            res_4 = aggregated_residual_layer(inputs=res_3, output_channels=self.feat_num * 16, cardinality=32,
+            res_4_0 = aggregated_residual_layer(inputs=res_3, output_channels=self.feat_num * 16, cardinality=32,
+                                                bottleneck_d=4, is_training=is_training,
+                                                name='res_4_0', padding='same', use_bias=False,
+                                                dilation=4)
+            res_4 = aggregated_residual_layer(inputs=res_4_0, output_channels=self.feat_num * 16, cardinality=32,
                                               bottleneck_d=4, is_training=is_training,
                                               name='res_4', padding='same', use_bias=False,
-                                              dilation=4)
+                                              dilation=1)
 
         with tf.device(device_name_or_function=self.device[1]):
             fuse_1 = conv_bn_relu(inputs=res_3, output_channels=self.feat_num * 16, kernel_size=1, stride=1,
