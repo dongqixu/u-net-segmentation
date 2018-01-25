@@ -119,7 +119,7 @@ def get_image_and_label_batch(image_data_list, label_data_list, input_size, batc
                     label_temp = np.flip(label_temp, axis=_axis)
 
         # NDHWC
-        image_batch[ith_batch, :, :, :, :] = image_temp
+        image_batch[ith_batch, :, :, :, 0] = image_temp
         label_batch[ith_batch, :, :, :] = label_temp
 
     return image_batch, label_batch
