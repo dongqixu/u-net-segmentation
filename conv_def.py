@@ -148,3 +148,63 @@ def residual_block(inputs, output_channels, kernel_size, stride, is_training, na
             out = layer
         relu_1 = tf.nn.relu(features=out, name=name + '_relu_b')
         return relu_1
+
+
+# ResNeXt
+def transform_layer(inputs, bottleneck_d, is_training, name, padding='same', use_bias=False, dilation=1):
+    with tf.variable_scope(name_or_scope=name):
+        conv_0 = conv3d(inputs, bottleneck_d, 1, 1, padding=padding, use_bias=use_bias,
+                        name=name+'_conv_i', dilation=dilation)
+        bn_0 = tf.contrib.layers.batch_norm(inputs=conv_0, decay=0.9, scale=True, epsilon=1e-5,
+                                            updates_collections=None, is_training=is_training,
+                                            scope=name+'_batch_norm_i')
+        relu_0 = tf.nn.relu(features=bn_0, name=name+'_relu_i')
+
+        conv_1 = conv3d(relu_0, bottleneck_d, 3, 1, padding=padding, use_bias=use_bias,
+                        name=name+'_conv_ii', dilation=dilation)
+        bn_1 = tf.contrib.layers.batch_norm(inputs=conv_1, decay=0.9, scale=True, epsilon=1e-5,
+                                            updates_collections=None, is_training=is_training,
+                                            scope=name+'_batch_norm_ii')
+        relu_1 = tf.nn.relu(features=bn_1, name=name+'_relu_ii')
+        return relu_1
+
+
+def split_layer(inputs, cardinality, bottleneck_d, is_training, name, padding='same', use_bias=False, dilation=1):
+    with tf.variable_scope(name_or_scope=name):
+        layers_split = list()
+        for i in range(cardinality):
+            split = transform_layer(inputs, bottleneck_d, is_training, name+'_'+str(i), padding, use_bias, dilation)
+            layers_split.append(split)
+
+        concat_dimension = 4  # channels_last
+        return tf.concat(layers_split, axis=concat_dimension)
+
+
+def transition_layer(inputs, output_channels, is_training, name, padding='same', use_bias=False, dilation=1):
+    with tf.variable_scope(name_or_scope=name):
+        conv_2 = conv3d(inputs, output_channels, 1, 1, padding=padding, use_bias=use_bias,
+                        name=name+'_conv_iii', dilation=dilation)
+        bn_2 = tf.contrib.layers.batch_norm(inputs=conv_2, decay=0.9, scale=True, epsilon=1e-5,
+                                            updates_collections=None, is_training=is_training,
+                                            scope=name+'_batch_norm_iii')
+        return bn_2
+
+
+def aggregated_residual_layer(inputs, output_channels, cardinality, bottleneck_d, is_training,
+                              name, padding='same', use_bias=False, dilation=1, residual=True):
+    splits = split_layer(inputs, cardinality, bottleneck_d, is_training, name, padding, use_bias, dilation)
+    transition = transition_layer(splits, output_channels, is_training, name, padding, use_bias, dilation)
+
+    if residual:
+        if transition.shape != inputs.shape:
+            # tensor shape mismatch problem
+            extension = conv3d(inputs, output_channels * 2, kernel_size=1, stride=1, padding='same',
+                               use_bias=True, name=name+'_residual', dilation=1)
+            out = transition + extension
+        else:
+            out = transition + inputs
+    else:
+        out = transition
+
+    relu_2 = tf.nn.relu(features=out, name=name + '_relu_iii')
+    return relu_2
