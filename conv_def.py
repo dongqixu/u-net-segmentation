@@ -3,8 +3,6 @@ import tensorflow.contrib.slim as slim
 
 ''' Fundamental 3D Convolution Definition '''
 
-# TODO: Dilated Convolution
-
 
 # 3D convolution
 def conv3d(inputs, output_channels, kernel_size, stride, padding='same', use_bias=False, name='conv', dilation=1):
@@ -38,7 +36,6 @@ def conv_bn_relu(inputs, output_channels, kernel_size, stride, is_training, name
     with tf.variable_scope(name_or_scope=name):
         conv = conv3d(inputs, output_channels, kernel_size, stride, padding=padding,
                       use_bias=use_bias, name=name+'_conv')
-        '''device control?'''
         bn = tf.contrib.layers.batch_norm(
             inputs=conv,                # tensor, first dimension of batch_size
             decay=0.9,                  # recommend trying decay=0.9
@@ -68,7 +65,6 @@ def conv_bn_relu(inputs, output_channels, kernel_size, stride, is_training, name
             # param_regularizers = None,
             # activation_fn = None,
         )
-        '''Why updates_collections=None?'''
         relu = tf.nn.relu(features=bn, name=name+'_relu')
     return relu
 
@@ -101,7 +97,7 @@ def deconv3d(inputs, output_channels, name='deconv'):
         data_format='NDHWC',
         name=name
     )
-    '''Strides and Filter shape, draw the pictures'''
+    '''Further adjustment in strides and filter shape'''
     return deconv
 
 
@@ -109,29 +105,11 @@ def deconv3d(inputs, output_channels, name='deconv'):
 def deconv_bn_relu(inputs, output_channels, is_training, name):
     with tf.variable_scope(name):
         deconv = deconv3d(inputs=inputs, output_channels=output_channels, name=name+'_deconv')
-        '''device control?'''
         bn = tf.contrib.layers.batch_norm(inputs=deconv, decay=0.9, scale=True, epsilon=1e-5,
                                           updates_collections=None, is_training=is_training,
                                           scope=name+'_batch_norm')
         relu = tf.nn.relu(features=bn, name=name+'_relu')
     return relu
-
-
-'''May be used in future'''
-
-
-# 3 Units of conv_bn_relu with combined output, why?
-def conv_bn_relu_x3(inputs, output_channels, kernel_size, stride, is_training, name,
-                    padding='same', use_bias=False):
-    with tf.variable_scope(name):
-        z = conv_bn_relu(inputs, output_channels, kernel_size, stride, is_training, name=name+'_dense1',
-                         padding=padding, use_bias=use_bias)
-        z_out = conv_bn_relu(z, output_channels, kernel_size, stride, is_training, name=name+'_dense2',
-                             padding=padding, use_bias=use_bias)
-        z_out = conv_bn_relu(z_out, output_channels, kernel_size, stride, is_training, name=name+'_dense3',
-                             padding=padding, use_bias=use_bias)
-    return z+z_out
-    # input -> z -> z_out -> z_out + z
 
 
 # dilated convolution
@@ -155,19 +133,18 @@ def residual_block(inputs, output_channels, kernel_size, stride, is_training, na
         bn_1 = tf.contrib.layers.batch_norm(inputs=conv_1, decay=0.9, scale=True, epsilon=1e-5,
                                             updates_collections=None, is_training=is_training,
                                             scope=name + '_batch_norm_b')
-        out = bn_1
+        layer = bn_1
 
-        # TODO: when is better?
-        '''residual block'''
+        # residual block
         if residual:
-            if out.shape != inputs.shape:
+            if layer.shape != inputs.shape:
                 # tensor shape mismatch problem
                 extension = conv3d(inputs, output_channels*2, kernel_size=1, stride=1, padding='same',
                                    use_bias=True, name=name + '_residual', dilation=1)
-                residual = out + extension
+                out = layer + extension
             else:
-                residual = out + inputs
+                out = layer + inputs
         else:
-            residual = out
-        relu_1 = tf.nn.relu(features=residual, name=name + '_relu_b')
+            out = layer
+        relu_1 = tf.nn.relu(features=out, name=name + '_relu_b')
         return relu_1

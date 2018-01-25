@@ -4,7 +4,6 @@ import tensorflow as tf
 import time
 from conv_def import conv_bn_relu, deconv_bn_relu, conv3d, deconv3d, residual_block
 from data_io import load_image_and_label, get_image_and_label_batch
-from extract_kernel import extract_kernel_name
 from glob import glob
 from json_io import dict_to_json, json_to_dict
 from loss_def import dice_loss_function, softmax_loss_function
@@ -17,7 +16,6 @@ class Unet3D(object):
         # experiment
         self.rotation = parameter_dict['rotation']
         self.dice_option = parameter_dict['dice_option']
-        self.regularization = parameter_dict['regularization']
         self.network = parameter_dict['network']
         self.use_log_weight = parameter_dict['log_weight']
         self.select_sample = parameter_dict['select_sample']
@@ -32,12 +30,6 @@ class Unet3D(object):
             self.dice_loss_coefficient = parameter_dict['dice_loss_coefficient']  # default 0.1
         else:
             self.dice_loss_coefficient = 0
-
-        # regularization
-        if self.regularization:
-            self.l2_loss_coefficient = parameter_dict['l2_coefficient'] # default 0.0005
-        else:
-            self.l2_loss_coefficient = 0
         
         self.input_image = None
         self.input_ground_truth = None
@@ -62,7 +54,6 @@ class Unet3D(object):
         self.fine_tuning_variables = None
         self.saver = None
         self.saver_fine_tuning = None
-        self.l2_loss = None
 
         # predefined
         # single-gpu
@@ -100,7 +91,6 @@ class Unet3D(object):
         # from previous version
         self.save_interval = parameter_dict['save_interval']
         self.test_interval = parameter_dict['test_interval']
-        self.cube_overlapping_factor = parameter_dict['cube_overlapping_factor']
 
         # build model
         if self.network == 'unet':
@@ -285,7 +275,6 @@ class Unet3D(object):
 
         return predicted_prob, predicted_label, auxiliary1_prob_1x, auxiliary2_prob_1x, auxiliary3_prob_1x
 
-    # TODO: use supervised network
     def build_unet_model(self):
         # input data and labels
         self.input_image = tf.placeholder(dtype=tf.float32,
@@ -324,22 +313,22 @@ class Unet3D(object):
             self.auxiliary3_weight_loss * 0.3
 
         # regularization
+        '''
         _norm = 0
         tensor_name_dict = json_to_dict('kernel/regularization_unet.json', read_file=True)
         for tensor_name in tensor_name_dict.values():
             _tensor = tf.get_default_graph().get_tensor_by_name(tensor_name)
             _norm += tf.nn.l2_loss(_tensor)
         self.l2_loss = _norm
+        '''
 
         # total loss
         self.total_loss = \
-            self.total_dice_loss * self.dice_loss_coefficient + self.total_weight_loss + \
-            self.l2_loss * self.l2_loss_coefficient
+            self.total_dice_loss * self.dice_loss_coefficient + self.total_weight_loss
 
         # trainable variables
         self.trainable_variables = tf.trainable_variables()
 
-        # TODO: how to extract layers for fine-tuning? why?
         '''How to list all of them'''
         fine_tuning_layer = [
                 'encoder1_1/encoder1_1_conv/kernel:0',
@@ -352,14 +341,14 @@ class Unet3D(object):
                 'encoder4_2/encoder4_2_conv/kernel:0',
         ]
 
-        # TODO: what does this part mean
-        self.fine_tuning_variables = []
-        for variable in self.trainable_variables:
-            # print('\'%s\',' % variable.name)
-            for index, kernel_name in enumerate(fine_tuning_layer):
-                if kernel_name in variable.name:
-                    self.fine_tuning_variables.append(variable)
-                    break  # not necessary to continue
+        # # TODO: what does this part mean
+        # self.fine_tuning_variables = []
+        # for variable in self.trainable_variables:
+        #     # print('\'%s\',' % variable.name)
+        #     for index, kernel_name in enumerate(fine_tuning_layer):
+        #         if kernel_name in variable.name:
+        #             self.fine_tuning_variables.append(variable)
+        #             break  # not necessary to continue
 
         self.saver = tf.train.Saver(max_to_keep=20)
         self.saver_fine_tuning = tf.train.Saver(self.fine_tuning_variables)
@@ -411,24 +400,17 @@ class Unet3D(object):
         self.trainable_variables = tf.trainable_variables()
 
         # runtime update json file
+        '''
         with open('kernel/kernel_list.txt', 'w') as name_list:
             for _var in self.trainable_variables:
                 name_list.write(f'{_var}\n')
         extract_kernel_name(file_read='kernel/kernel_list.txt',
                             file_write='kernel/regularization_dilated.json')
-
-        # regularization
-        _norm = 0
-        tensor_name_dict = json_to_dict('kernel/regularization_dilated.json', read_file=True)
-        for tensor_name in tensor_name_dict.values():
-            _tensor = tf.get_default_graph().get_tensor_by_name(tensor_name)
-            _norm += tf.nn.l2_loss(_tensor)
-        self.l2_loss = _norm
+        '''
 
         # total loss
         self.total_loss = \
-            self.total_dice_loss * self.dice_loss_coefficient + self.total_weight_loss + \
-            self.l2_loss * self.l2_loss_coefficient
+            self.total_dice_loss * self.dice_loss_coefficient + self.total_weight_loss
 
         self.saver = tf.train.Saver(max_to_keep=20)
         # The Saver class adds ops to save and restore variables to and from checkpoints.
@@ -528,11 +510,10 @@ class Unet3D(object):
                     rotation_flag=self.rotation, flip_flag=self.rotation)
                 # val_data_batch, val_label_batch = get_image_and_label_batch(
                 #     image_data_list, label_data_list, self.input_size, self.batch_size)
-                '''The same data at this stage'''
 
                 # update network
-                _, train_loss, dice_loss, weight_loss, l2_loss = self.sess.run(
-                    [optimizer, self.total_loss, self.total_dice_loss, self.total_weight_loss, self.l2_loss],
+                _, train_loss, dice_loss, weight_loss = self.sess.run(
+                    [optimizer, self.total_loss, self.total_dice_loss, self.total_weight_loss],
                     feed_dict={self.input_image: train_data_batch,
                                self.input_ground_truth: train_label_batch})
                 '''Summary'''
@@ -564,9 +545,9 @@ class Unet3D(object):
                 # loss_log.write('%s %s\n' % (train_loss, val_loss))
                 # deprecated: remove validation loss, dice loss original
                 output_format = '[Epoch] %d, time: %4.4f, train_loss: %.8f \n' \
-                                '[Loss] dice_loss: %.8f, weight_loss: %.8f, l2_loss: %.8f \n\n'\
+                                '[Loss] dice_loss: %.8f, weight_loss: %.8f \n\n'\
                                 % (epoch+1, time.time() - start_time, train_loss,
-                                   dice_loss, weight_loss, l2_loss)
+                                   dice_loss, weight_loss)
                 loss_log.write(output_format)
                 print(output_format, end='')
                 if np.mod(epoch+1, self.save_interval) == 0:
@@ -576,17 +557,15 @@ class Unet3D(object):
                 if np.mod(epoch + 1, self.test_interval) == 0:
                     self.test(initialization=False, image_label_dict=image_label_dict, train_epoch=epoch+1)
 
-    # May produce memory issue - not test
+    # May produce memory issue
     def test(self, initialization=True, image_label_dict=None, train_epoch=None):
-        image_data_list_full = None
-        label_data_list_full = None
         if not initialization and image_label_dict is None:
             print(' [!] Fatal Error: no feeding data')
             return
         if initialization:
             # initialization
-            variables_initialization = tf.global_variables_initializer()
-            self.sess.run(variables_initialization)
+            # variables_initialization = tf.global_variables_initializer()
+            # self.sess.run(variables_initialization)
 
             # TODO: load pre-trained model
             # TODO: load checkpoint
@@ -701,8 +680,8 @@ class Unet3D(object):
                             test_prediction_batch = self.sess.run(self.predicted_label,
                                                                   feed_dict={self.input_image: test_data_batch})
                             # TODO: add loss described in the paper
-                            test_loss, dice_loss, weight_loss, l2_loss = self.sess.run(
-                                [self.total_loss, self.total_dice_loss, self.total_weight_loss, self.l2_loss],
+                            test_loss, dice_loss, weight_loss = self.sess.run(
+                                [self.total_loss, self.total_dice_loss, self.total_weight_loss],
                                 feed_dict={self.input_image: test_data_batch,
                                            self.input_ground_truth: test_label_batch})
 
@@ -723,10 +702,10 @@ class Unet3D(object):
                             # loss_log.write('%s %s\n' % (train_loss, val_loss))
                             output_format = '[DHW] %f, %f, %f\n' \
                                             '[Sample] %d, time: %4.4f, test_loss: %.8f \n' \
-                                            '[Loss] dice_loss: %.8f, weight_loss: %.8f, l2_loss: %.8f \n\n' \
+                                            '[Loss] dice_loss: %.8f, weight_loss: %.8f \n\n' \
                                             % (d/depth_range[-1], h/height_range[-1], w/width_range[-1],
                                                ith_sample, time.time() - batch_start_time, test_loss,
-                                               dice_loss, weight_loss, l2_loss)
+                                               dice_loss, weight_loss)
                             test_log.write(output_format)
                             # print(output_format, end='')
 
@@ -787,7 +766,3 @@ class Unet3D(object):
                                 f'[Accuracy] {accuracy} {accuracy_with_label}\n\n'
                 print(output_format, end='')
                 test_log.write(output_format)
-
-
-if __name__ == '__main__':
-    sess = tf.Session()

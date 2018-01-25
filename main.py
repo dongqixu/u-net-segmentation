@@ -11,16 +11,15 @@ from model import Unet3D
 def init_parameter(name):
     # dictionary
     parameter_dict = dict()
-    # current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
     parameter_dict['phase'] = 'train'
     parameter_dict['batch_size'] = 1
     parameter_dict['input_size'] = 64
     parameter_dict['input_channels'] = 1
     parameter_dict['output_size'] = 64
     parameter_dict['output_channels'] = 3
-    parameter_dict['learning_rate'] = 0.001
+    parameter_dict['learning_rate'] = 0.01
     parameter_dict['beta1'] = 0.5
-    parameter_dict['epoch'] = 35000  # 100000 -> 10000
+    parameter_dict['epoch'] = 35000  # learning strategy
     date_form = 'crop'
     parameter_dict['train_data_dir'] = f'../hvsmr/{date_form}/data/'
     parameter_dict['test_data_dir'] = f'../hvsmr/{date_form}/data/'
@@ -34,22 +33,19 @@ def init_parameter(name):
     # from previous version
     parameter_dict['save_interval'] = 5000  # 10000 -> 1000
     parameter_dict['test_interval'] = 1000  # ResNet
-    parameter_dict['cube_overlapping_factor'] = 4
     parameter_dict['gpu'] = '0'
 
     # scalable number of feature maps: default 32
-    parameter_dict['feature_number'] = 16  # 32 -> 16
+    parameter_dict['feature_number'] = 16
     parameter_dict['index_start'] = 0
-    parameter_dict['index_included'] = 4
+    parameter_dict['index_included'] = 5
 
     # for experiment
     parameter_dict['rotation'] = True
     parameter_dict['dice_option'] = 'value'
-    parameter_dict['regularization'] = False
     parameter_dict['network'] = 'unet'
     parameter_dict['log_weight'] = False
-    parameter_dict['dice_loss_coefficient'] = 0.25  # 0.5 -> 0.25
-    parameter_dict['l2_coefficient'] = 0.0005
+    parameter_dict['dice_loss_coefficient'] = 0.25
     parameter_dict['select_sample'] = None
 
     return parameter_dict
@@ -64,7 +60,6 @@ def main(_):
     # experiment
     parser.add_argument('-R', '--rotation', action='store_true')
     parser.add_argument('-d', '--dice', choices=['value', 'softmax'], help='dice type')
-    parser.add_argument('-r', '--regularization', action='store_true')
     parser.add_argument('-n', '--network', choices=['unet', 'dilated'], help='network option')
     parser.add_argument('--epoch', help='training epochs')
     parser.add_argument('--save_interval', help='save interval')
@@ -72,10 +67,8 @@ def main(_):
     parser.add_argument('--memory', help='memory usage for unlimited usage')
     parser.add_argument('--log_weight', action='store_true')
     parser.add_argument('--dice_coefficient', help='multiple of dice loss')
-    parser.add_argument('--l2_coefficient', help='multiple of l2 loss')
     parser.add_argument('--select', help='select samples from list')
     # parser.add_argument('--feature', help='number of features')
-    # TODO:
     args = parser.parse_args()
     if args.gpu:
         gpu = args.gpu
@@ -114,8 +107,6 @@ def main(_):
         parameter_dict['rotation'] = True
     if args.dice:
         parameter_dict['dice_option'] = args.dice
-    if args.regularization:
-        parameter_dict['regularization'] = True
     if args.network:
         parameter_dict['network'] = args.network
     if args.epoch:
@@ -128,8 +119,6 @@ def main(_):
         parameter_dict['log_weight'] = True
     if args.dice_coefficient:
         parameter_dict['dice_loss_coefficient'] = float(args.dice_coefficient)
-    if args.l2_coefficient:
-        parameter_dict['l2_coefficient'] = float(args.l2_coefficient)
     if args.select:
         sample = list()
         string = args.select.strip().split(',')

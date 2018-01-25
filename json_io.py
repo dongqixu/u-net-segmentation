@@ -29,7 +29,7 @@ def json_to_dict(json_str, read_file=False):
 
 # convert necessary parameter into json
 # sample: self.phase = parameter_dict['phase'] -> "phase": "",
-'''
+
 # deprecated
 def extract_json_format_from_class_init(text_in_file):
     output_string = '{\n'
@@ -41,26 +41,3 @@ def extract_json_format_from_class_init(text_in_file):
                 output_string = output_string + append_string
     output_string = output_string[:-2] + '\n}\n'
     return output_string
-'''
-
-
-# if __name__ == '__main__':
-#     data = {
-#         'name': 'ACME',
-#         'shares': 100,
-#         'price': 524.23
-#     }
-#     # dict_to_json
-#     dict_to_json(data, write_file=True, file_name='parameter.json')
-#     dict_to_json(data, write_file=True)
-#     json_str = dict_to_json(data)
-#     print(json_str)
-#     print('-------')
-#     # json_to_dict
-#     dict_from_file = json_to_dict('parameter.json', read_file=True)
-#     print(dict_from_file)
-#     dict_data = json_to_dict(json_str)
-#     print(dict_data)
-#
-#     # string = extract_json_format_from_class_init('')
-#     # print(string)

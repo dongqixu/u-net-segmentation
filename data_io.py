@@ -15,23 +15,19 @@ def load_image_and_label(image_filelist, label_filelist, resize_coefficient=1):
     label_data_list = []
     for ith_file in range(len(label_filelist)):
         # image
-        image_data = nib.load(image_filelist[ith_file]).get_data()
-        image_data = copy.copy(image_data)
-        # TODO: Normalization works?
+        image_data = nib.load(image_filelist[ith_file]).get_data().copy()
         mean_num = np.mean(image_data)
         deviation_num = np.std(image_data)
         image_data = (image_data - mean_num) / (deviation_num + 1e-5)
 
         # label
-        label_data = nib.load(label_filelist[ith_file]).get_data()
-        label_data = copy.copy(label_data)
+        label_data = nib.load(label_filelist[ith_file]).get_data().copy()
         # check
         if image_data.shape != label_data.shape:
             print('Error with shape mismatch!')
             exit(1)
 
-        # TODO: other data argumentation
-        '''Resize or other method'''
+        # TODO: other data augmentation
         if resize_coefficient != 1:
             # skimage.transform.resize: Resize image to match a certain size.
             print('Perform images resizing...')
@@ -104,33 +100,15 @@ def get_image_and_label_batch(image_data_list, label_data_list, input_size, batc
                          crop_position[2]:crop_position[2] + input_size
                          ]
 
-        # deprecated: check
-        # if image_temp is None or label_temp is None:
-        #     print('Fatal error with None batch')
-        #     exit(1)
-
-        '''Necessary? Zero problem may happen'''
-        # Already perform normalization over the whole dataset
-        # image_normalization = image_temp
-        '''
-        image_temp = image_temp / 255.0  # what is the range?
-        mean_temp = np.mean(image_temp)
-        deviation_temp = np.std(image_temp)
-        # print(mean_temp, deviation_temp)  # the form of single value
-        image_normalization = (image_temp - mean_temp) / (deviation_temp + 1e-5)
-        '''
-
         # data augmentation with rotation and flipping
-        if np.random.random() > 0.5:
+        if np.random.random() > 0.333:
             if np.random.random() > 0.5:
                 if rotation_flag:
                     # print('Rotating batch...')
                     rotate_angle_list = [90, 180, 270]
                     axes_list = [(0, 1), (0, 2), (1, 2)]
-                    _i = np.random.randint(3)
-                    _j = np.random.randint(3)
-                    _angle = rotate_angle_list[_i]
-                    _axes = axes_list[_j]
+                    _angle = rotate_angle_list[np.random.randint(3)]
+                    _axes = axes_list[np.random.randint(3)]
                     image_temp = rotate(input=image_temp, angle=_angle, axes=_axes, reshape=False, order=1)
                     label_temp = rotate(input=label_temp, angle=_angle, axes=_axes, reshape=False, order=0)
             else:
@@ -141,14 +119,14 @@ def get_image_and_label_batch(image_data_list, label_data_list, input_size, batc
                     label_temp = np.flip(label_temp, axis=_axis)
 
         # NDHWC
-        image_batch[ith_batch, :, :, :, channel-1] = image_temp
+        image_batch[ith_batch, :, :, :, :] = image_temp
         label_batch[ith_batch, :, :, :] = label_temp
 
     return image_batch, label_batch
 
 
 def slice_visualization(image_data, label_data, batch=False, show_depth=None, show_height=None, show_width=None):
-    # batch reshape
+    # batch reshape for non raw data
     if batch:
         batch_size, depth, height, width, channel = image_data.shape
         image_data = np.reshape(image_data, [depth, height, width])
@@ -188,7 +166,6 @@ def slice_visualization(image_data, label_data, batch=False, show_depth=None, sh
         plt.imshow(label_slice[ith_slice], cmap='gray', origin='lower')
     # plt.subplot_tool()
     plt.show()
-    # plt.imshow(z_slice, cmap='gray', origin='lower')
     # plt.text(0.5, 0.5, i, fontsize=12)
     # plt.pause(0.01)
 
@@ -211,7 +188,7 @@ if __name__ == '__main__':
     image_data_list, label_data_list = load_image_and_label(image_list, label_list, resize_coefficient=1)
     print('images loaded...')
 
-    # print data range
+    # print data shape
     for i in range(len(image_data_list)):
         print(image_data_list[i].shape, label_data_list[i].shape)
     #     print(f'Batch {i}:', end='')

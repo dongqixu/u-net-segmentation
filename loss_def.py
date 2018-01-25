@@ -5,7 +5,6 @@ import tensorflow as tf
 
 # self-define dice loss
 def dice_loss_function(prediction, ground_truth, use_softmax=False, use_log_weight=False):
-    # TODO: any influence on softmax?
     if use_softmax:
         prediction = tf.nn.softmax(logits=prediction)
     ground_truth = tf.one_hot(indices=ground_truth, depth=3)
