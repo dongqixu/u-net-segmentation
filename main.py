@@ -45,7 +45,7 @@ def init_parameter(name):
     parameter_dict['dice_option'] = 'value'
     parameter_dict['network'] = 'dilated'
     parameter_dict['log_weight'] = False
-    parameter_dict['dice_loss_coefficient'] = 0
+    parameter_dict['dice_loss_coefficient'] = 0.1
     parameter_dict['select_sample'] = None
 
     return parameter_dict
