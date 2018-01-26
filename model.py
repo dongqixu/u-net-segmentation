@@ -277,7 +277,6 @@ class Unet3D(object):
 
     def aggregated_resnet(self, inputs):
         is_training = (self.phase == 'train')
-        concat_dimension = 4  # channels_last
 
         # device: gpu0
         with tf.device(device_name_or_function=self.device[0]):
