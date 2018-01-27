@@ -36,7 +36,7 @@ def init_parameter(name):
     parameter_dict['gpu'] = '0'
 
     # scalable number of feature maps: default 32
-    parameter_dict['feature_number'] = 16
+    parameter_dict['feature_number'] = 32
     parameter_dict['index_start'] = 0
     parameter_dict['index_included'] = 5
 
