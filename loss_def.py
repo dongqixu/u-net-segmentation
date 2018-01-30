@@ -3,31 +3,20 @@ import tensorflow as tf
 ''' Loss Function Definition'''
 
 
-# self-define dice loss
-def dice_loss_function(prediction, ground_truth, use_softmax=False, use_log_weight=False):
-    if use_softmax:
-        prediction = tf.nn.softmax(logits=prediction)
+# TODO: design new loss function
+# self-define dice loss, useless interface removed
+def dice_loss_function(prediction, ground_truth, *interface):
     ground_truth = tf.one_hot(indices=ground_truth, depth=3)
-    log_weight = None
-    if use_log_weight:
-        # weight
-        weight_list = []
-        for i in range(3):
-            num = tf.reduce_sum(ground_truth[:, :, :, :, i]) / tf.reduce_sum(ground_truth)
-            weight_list.append(num)
-        log_weight = get_weight_list(weight_list)
     dice_loss = 0
-    for i in range(3):
+    for i in range(1, 3):
         # reduce_mean calculation -> reduce_sum
         intersection = tf.reduce_sum(prediction[:, :, :, :, i] * ground_truth[:, :, :, :, i])
         union_prediction = tf.reduce_sum(prediction[:, :, :, :, i] * prediction[:, :, :, :, i])
         union_ground_truth = tf.reduce_sum(ground_truth[:, :, :, :, i] * ground_truth[:, :, :, :, i])
         union = union_ground_truth + union_prediction
         # weight should sum to 1 -> sum as 2 -> OK
-        if use_log_weight:
-            weight = log_weight[i]
-        else:
-            weight = 1 - (tf.reduce_sum(ground_truth[:, :, :, :, i]) / tf.reduce_sum(ground_truth))
+        # weight = 1 - (tf.reduce_sum(ground_truth[:, :, :, :, i]) / tf.reduce_sum(ground_truth))
+        weight = 1.0  # equal weight
         dice_loss += (1 - 2 * intersection / union) * weight
     return dice_loss
 
@@ -40,17 +29,20 @@ def softmax_loss_function(prediction, ground_truth):
     softmax_prediction = tf.nn.softmax(logits=prediction)
     ground_truth = tf.one_hot(indices=ground_truth, depth=3)
     loss = 0
-    for i in range(3):
+    for i in range(1, 3):
         class_i_ground_truth = ground_truth[:, :, :, :, i]
         class_i_prediction = softmax_prediction[:, :, :, :, i]
         # weight should sum to 1 -> sum as 2 -> OK
-        weight = 1 - (tf.reduce_sum(class_i_ground_truth) / tf.reduce_sum(ground_truth))
+        # weight = 1 - (tf.reduce_sum(class_i_ground_truth) / tf.reduce_sum(ground_truth))
+        weight = 1.0  # equal weight
         loss = loss - tf.reduce_mean(weight * class_i_ground_truth * tf.log(
             tf.clip_by_value(t=class_i_prediction, clip_value_min=0.005, clip_value_max=1)))
         # Clips tensor values to a specified min and max.
     return loss
 
 
+'''
+# interface no long use
 def get_weight_list(ratio):
     ratio_x, ratio_y, ratio_z = ratio
     weight_x = 1 - ratio_x
@@ -68,3 +60,4 @@ def tf_log10(tensor):
     numerator = tf.log(tensor)
     denominator = tf.log(tf.constant(10, dtype=numerator.dtype))
     return numerator / denominator
+'''
