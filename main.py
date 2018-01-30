@@ -38,7 +38,7 @@ def init_parameter(name):
     # scalable number of feature maps: default 32
     parameter_dict['feature_number'] = 32
     parameter_dict['index_start'] = 0
-    parameter_dict['index_included'] = 5
+    parameter_dict['index_included'] = 9
 
     # for experiment
     parameter_dict['rotation'] = True
