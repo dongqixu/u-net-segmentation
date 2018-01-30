@@ -32,8 +32,7 @@ def softmax_loss_function(prediction, ground_truth):
         class_i_ground_truth = ground_truth[:, :, :, :, i]
         class_i_prediction = softmax_prediction[:, :, :, :, i]
         # weight should sum to 1 -> sum as 2 -> OK
-        # weight = 1 - (tf.reduce_sum(class_i_ground_truth) / tf.reduce_sum(ground_truth))
-        weight = 1.0  # equal weight
+        weight = 1 - (tf.reduce_sum(class_i_ground_truth) / tf.reduce_sum(ground_truth))
         loss = loss - tf.reduce_mean(weight * class_i_ground_truth * tf.log(
             tf.clip_by_value(t=class_i_prediction, clip_value_min=0.005, clip_value_max=1)))
         # Clips tensor values to a specified min and max.
