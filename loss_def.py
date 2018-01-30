@@ -15,8 +15,7 @@ def dice_loss_function(prediction, ground_truth, *interface):
         union_ground_truth = tf.reduce_sum(ground_truth[:, :, :, :, i] * ground_truth[:, :, :, :, i])
         union = union_ground_truth + union_prediction
         # weight should sum to 1 -> sum as 2 -> OK
-        # weight = 1 - (tf.reduce_sum(ground_truth[:, :, :, :, i]) / tf.reduce_sum(ground_truth))
-        weight = 1.0  # equal weight
+        weight = 1 - (tf.reduce_sum(ground_truth[:, :, :, :, i]) / tf.reduce_sum(ground_truth))
         dice_loss += (1 - 2 * intersection / union) * weight
     return dice_loss
 
