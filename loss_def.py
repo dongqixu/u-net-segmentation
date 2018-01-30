@@ -28,7 +28,7 @@ def softmax_loss_function(prediction, ground_truth):
     softmax_prediction = tf.nn.softmax(logits=prediction)
     ground_truth = tf.one_hot(indices=ground_truth, depth=3)
     loss = 0
-    for i in range(1, 3):
+    for i in range(3):
         class_i_ground_truth = ground_truth[:, :, :, :, i]
         class_i_prediction = softmax_prediction[:, :, :, :, i]
         # weight should sum to 1 -> sum as 2 -> OK
